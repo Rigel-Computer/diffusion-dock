@@ -82,3 +82,7 @@ Configs werden als JSON in `configs/` gespeichert:
 - Weights-Volume immer read-only gemountet
 - Docker-Zugriff über Socket-Proxy (nur Container/Image-Operationen erlaubt)
 - `EXEC=1` am Socket-Proxy kann nach der GGUF-Extension-Installation auf `0` gesetzt werden
+
+---
+
+*Erstellt mit Unterstützung von [Claude Code](https://claude.ai/code) (Anthropic).*
