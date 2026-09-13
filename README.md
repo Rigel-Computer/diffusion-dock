@@ -1,5 +1,7 @@
 # Flux / ComfyUI Manager
 
+> **Work in progress** — not yet tested end-to-end. Use at your own risk.
+
 Lokales Management-UI für ComfyUI auf einer RTX 4070 Ti Super.
 Analog zum [LLM-Manager](../README.md) – gleiche Architektur, gleicher Glacier-Look,
 aber für Bildgenerierung mit Flux und anderen Diffusionsmodellen.
