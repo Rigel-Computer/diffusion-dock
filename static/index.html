@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="de">
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Flux / ComfyUI Manager</title>
+      <link rel="stylesheet" href="style.css" />
+   </head>
+   <body>
+      <div class="app">
+         <header>
+            <h1>Flux / ComfyUI Manager</h1>
+            <div id="dockerStatus" class="docker-badge">Docker: checking...</div>
+         </header>
+
+         <!-- Status -->
+         <section class="status-bar" id="statusBar">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Stopped</span>
+            <span id="statusCheckpoint" class="status-weight"></span>
+            <span id="statusApi" class="status-api"></span>
+         </section>
+
+         <!-- Checkpoints List -->
+         <section class="section">
+            <h2>Checkpoints / Modelle</h2>
+            <div id="checkpointsList" class="weights-list">
+               <p class="muted">Loading...</p>
+            </div>
+         </section>
+
+         <!-- Config Panel -->
+         <section class="section" id="configSection" style="display: none">
+            <h2>
+               Parameter
+               <span id="configModelName" class="config-model-name"></span>
+            </h2>
+
+            <div class="config-grid">
+               <label>VRAM-Modus
+                  <select id="vramMode">
+                     <option value="lowvram">Low VRAM (~8 GB)</option>
+                     <option value="normalvram" selected>Normal (16 GB)</option>
+                     <option value="highvram">High VRAM</option>
+                  </select>
+               </label>
+               <label>VAE Precision
+                  <select id="vaePrecision">
+                     <option value="auto" selected>Auto</option>
+                     <option value="fp16">FP16 (spart ~1 GB)</option>
+                     <option value="bf16">BF16</option>
+                     <option value="fp32">FP32 (volle Qualität)</option>
+                  </select>
+               </label>
+               <label>Preview-Methode
+                  <select id="previewMethod">
+                     <option value="auto" selected>Auto</option>
+                     <option value="latent2rgb">latent2rgb (schnell)</option>
+                     <option value="none">Keine</option>
+                  </select>
+               </label>
+               <label class="checkbox">
+                  <input type="checkbox" id="forceFp16" />
+                  Force FP16 <span class="input-hint">spart ~20% VRAM</span>
+               </label>
+               <label class="checkbox">
+                  <input type="checkbox" id="disableXformers" />
+                  Disable xformers
+               </label>
+            </div>
+         </section>
+
+         <!-- Info (wird mit Config eingeblendet) -->
+         <section class="section info-section" id="infoSection" style="display: none">
+            <h2>Hinweise</h2>
+            <div class="info-grid">
+               <div class="info-item">
+                  <span class="info-flag">GGUF-Modelle</span>
+                  <span class="info-desc">
+                     Werden nach <code>models/unet/</code> gemountet. Erfordert die
+                     ComfyUI-GGUF Extension (siehe unten).
+                  </span>
+               </div>
+               <div class="info-item">
+                  <span class="info-flag">Model-Loading</span>
+                  <span class="info-desc">
+                     ComfyUI lädt Modelle erst beim ersten Workflow-Run, nicht beim Start.
+                     „ComfyUI bereit" bedeutet: UI erreichbar – nicht: Modell im VRAM.
+                  </span>
+               </div>
+            </div>
+         </section>
+
+         <!-- GGUF Extension -->
+         <section class="section" id="ggufSection" style="display: none">
+            <h2>GGUF Extension</h2>
+            <div class="info-grid">
+               <div class="info-item">
+                  <span id="ggufStatus" class="info-flag">–</span>
+                  <span class="info-desc">
+                     Einmalige Installation während ComfyUI läuft. Danach persistiert
+                     die Extension im <code>extensions/</code>-Verzeichnis.
+                  </span>
+               </div>
+            </div>
+            <button id="installGgufBtn" class="btn btn-config" style="margin-top: 8px" disabled>
+               GGUF Extension installieren
+            </button>
+         </section>
+
+         <!-- Actions -->
+         <section class="actions">
+            <button id="startBtn" class="btn btn-start" disabled>Start</button>
+            <button id="stopBtn" class="btn btn-stop" disabled>Stop</button>
+            <a
+               id="openComfyBtn"
+               class="btn btn-comfy"
+               href="#"
+               target="_blank"
+               style="pointer-events: none; opacity: 0.4; text-decoration: none"
+               >ComfyUI öffnen ↗</a
+            >
+            <button id="saveConfigBtn" class="btn btn-config" disabled>
+               Config speichern
+            </button>
+         </section>
+
+         <!-- Toast -->
+         <div id="toast" class="toast hidden"></div>
+      </div>
+
+      <script src="script.js"></script>
+   </body>
+</html>

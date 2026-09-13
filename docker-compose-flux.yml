@@ -1,0 +1,55 @@
+networks:
+   flux-net:
+      name: flux-net
+      driver: bridge
+
+services:
+   flux-socket-proxy:
+      image: tecnativa/docker-socket-proxy
+      container_name: flux_socket_proxy
+      networks:
+         - flux-net
+      volumes:
+         - /var/run/docker.sock:/var/run/docker.sock
+      environment:
+         - CONTAINERS=1   # GET /containers/* (inspizieren)
+         - IMAGES=1       # GET /images/* (Metadaten lesen)
+         - POST=1         # POST-Requests: create, start, stop
+         - DELETE=1       # DELETE-Requests: Container entfernen
+         - EXEC=1         # Für einmalige GGUF-Extension-Installation; danach auf 0 setzen
+      restart: unless-stopped
+
+   flux-manager:
+      build: .
+      image: flux_manager_image
+      container_name: flux_manager
+      networks:
+         - flux-net
+      ports:
+         - "7651:8000"
+      read_only: true
+      tmpfs:
+         - /tmp
+      user: "1000:1000"
+      security_opt:
+         - no-new-privileges:true
+      cap_drop:
+         - ALL
+      volumes:
+         - ./static:/app/static:ro
+         - ./backend.py:/app/backend.py:ro
+         - ./configs:/app/configs
+         - ./extensions:/app/extensions
+         - ../weights:/weights:ro
+      environment:
+         - DOCKER_HOST=tcp://flux-socket-proxy:2375
+         - WEIGHTS_DIR=/weights
+         - CONFIGS_DIR=/app/configs
+         - EXTENSIONS_DIR=/app/extensions
+         - COMFYUI_IMAGE=yanwk/comfyui-boot:cu124
+         - COMFYUI_PORT=7650
+         - COMFYUI_CONTAINER_NAME=flux_comfyui
+         - COMFYUI_NETWORK=flux-net
+      depends_on:
+         - flux-socket-proxy
+      restart: unless-stopped

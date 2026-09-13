@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Modelle und Gewichte (zu groß für Git)
+weights/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Persistente Laufzeit-Daten
+configs/
+extensions/
+
+# Docker
+.dockerenv
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Lokal, wird nie gepusht
+DEVLOG.md
