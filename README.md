@@ -2,83 +2,84 @@
 
 > **Work in progress** — not yet tested end-to-end. Use at your own risk.
 
-Lokales Management-UI für ComfyUI auf einer RTX 4070 Ti Super.
-Analog zum [LLM-Manager](../README.md) – gleiche Architektur, gleicher Glacier-Look,
-aber für Bildgenerierung mit Flux und anderen Diffusionsmodellen.
+A lightweight web UI for managing local diffusion model inference via ComfyUI.
+Spin up a ComfyUI container on demand, configure it per model, and open the
+ComfyUI interface with a single click — without keeping a GPU-hungry process
+running in the background when you don't need it.
 
-## Architektur
+## Architecture
 
 ```
 Browser (Port 7651)
     └─> flux-manager [FastAPI] (Port 8000→7651)
-            │  Statische Files (static/)
-            │  Per-Modell-Configs (configs/)
+            │  Static files (static/)
+            │  Per-model configs (configs/)
             │
             └─> Docker Socket Proxy (flux_socket_proxy)
                     │
                     └─> ComfyUI Container [flux_comfyui] (on demand)
                             yanwk/comfyui-boot:cu124
                             GPU passthrough
-                            Port 7650, ComfyUI-Web-UI
+                            Port 7650, ComfyUI Web UI
                             /weights (read-only, GGUF + Safetensors)
 ```
 
-## Hardware-Voraussetzungen
+## Requirements
 
-- GPU mit CUDA-Support (getestet: RTX 4070 Ti Super, 16 GB VRAM)
-- Docker mit GPU-Passthrough (`nvidia-container-toolkit`)
-- Flux.1-dev Q6_K benötigt ca. 9–10 GB VRAM
+- CUDA-capable GPU (developed on RTX 4070 Ti Super, 16 GB VRAM)
+- Docker with GPU passthrough (`nvidia-container-toolkit`)
+- Flux.1-dev Q6_K requires approx. 9–10 GB VRAM
 
-## Unterstützte Modell-Formate
+## Supported Model Formats
 
-| Format | Mount-Pfad im Container | Hinweis |
-|--------|------------------------|---------|
-| `.gguf` | `models/unet/` | Erfordert ComfyUI-GGUF Extension |
-| `.safetensors` | `models/checkpoints/` | Nativ unterstützt |
+| Format | Mount path in container | Notes |
+|--------|------------------------|-------|
+| `.gguf` | `models/unet/` | Requires ComfyUI-GGUF extension |
+| `.safetensors` | `models/checkpoints/` | Natively supported |
 
 ## Quickstart
 
 ```bash
-# Manager bauen und starten
+# Build and start the manager
 docker compose -f docker-compose-flux.yml up -d --build
 
-# Management-UI
+# Management UI
 http://localhost:7651
 
-# ComfyUI (nach Start über das UI)
+# ComfyUI (once started via the UI)
 http://localhost:7650
 ```
 
-## Erster GGUF-Workflow
+## First GGUF Workflow
 
-1. Management-UI öffnen → GGUF-Modell auswählen → Start
-2. Warten bis Status grün (`ComfyUI bereit`)
-3. „GGUF Extension installieren" klicken (einmalig, danach persistiert)
-4. Container neu starten (Stop → Start)
-5. „ComfyUI öffnen ↗" → Workflow im ComfyUI-UI bauen
+1. Open the management UI → select a GGUF model → Start
+2. Wait for the status indicator to turn green (`ComfyUI ready`)
+3. Click "Install GGUF Extension" (one-time, persists in `extensions/`)
+4. Restart the container (Stop → Start)
+5. Click "Open ComfyUI ↗" → build your workflow in the native ComfyUI UI
 
 ## Ports
 
-| Port | Dienst |
-|------|--------|
+| Port | Service |
+|------|---------|
 | 7651 | Flux Manager UI |
-| 7650 | ComfyUI (aktiv wenn Container läuft) |
+| 7650 | ComfyUI (active while container is running) |
 
-## Konfiguration pro Modell
+## Per-Model Configuration
 
-Configs werden als JSON in `configs/` gespeichert:
+Configs are saved as JSON files in `configs/`:
 
-| Parameter | Bedeutung |
-|-----------|-----------|
+| Parameter | Description |
+|-----------|-------------|
 | `vram_mode` | `lowvram` / `normalvram` / `highvram` |
 | `vae_precision` | `auto` / `fp16` / `bf16` / `fp32` |
-| `force_fp16` | ~20% VRAM sparen |
-| `disable_xformers` | Fallback auf PyTorch Attention |
+| `force_fp16` | Saves ~20% VRAM |
+| `disable_xformers` | Fall back to PyTorch attention |
 | `preview_method` | `auto` / `latent2rgb` / `none` |
 
-## Sicherheit
+## Security
 
-- Manager-Container läuft als non-root (uid 1000), read-only Filesystem
-- Weights-Volume immer read-only gemountet
-- Docker-Zugriff über Socket-Proxy (nur Container/Image-Operationen erlaubt)
-- `EXEC=1` am Socket-Proxy kann nach der GGUF-Extension-Installation auf `0` gesetzt werden
+- Manager container runs as non-root (uid 1000) with a read-only filesystem
+- Weights volume is always mounted read-only
+- Docker access is sandboxed via socket proxy (only container/image operations allowed)
+- `EXEC=1` on the socket proxy can be set to `0` after the GGUF extension is installed
