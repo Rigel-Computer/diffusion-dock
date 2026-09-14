@@ -26,7 +26,7 @@ services:
       networks:
          - flux-net
       ports:
-         - "7651:8000"
+         - "7644:8000"
       read_only: true
       tmpfs:
          - /tmp
@@ -46,8 +46,8 @@ services:
          - WEIGHTS_DIR=/weights
          - CONFIGS_DIR=/app/configs
          - EXTENSIONS_DIR=/app/extensions
-         - COMFYUI_IMAGE=yanwk/comfyui-boot:cu124
-         - COMFYUI_PORT=7650
+         - COMFYUI_IMAGE=yanwk/comfyui-boot:cu126-slim-20260914
+         - COMFYUI_PORT=7643
          - COMFYUI_CONTAINER_NAME=flux_comfyui
          - COMFYUI_NETWORK=flux-net
       depends_on:

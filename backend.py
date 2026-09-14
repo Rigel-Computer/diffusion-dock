@@ -1,6 +1,7 @@
 import os
 import json
 import socket
+import threading
 import docker
 import requests
 from pathlib import Path
@@ -12,8 +13,8 @@ from pydantic import BaseModel
 WEIGHTS_DIR = Path(os.getenv("WEIGHTS_DIR", "/weights"))
 CONFIGS_DIR = Path(os.getenv("CONFIGS_DIR", "/app/configs"))
 EXTENSIONS_DIR = Path(os.getenv("EXTENSIONS_DIR", "/app/extensions"))
-COMFYUI_IMAGE = os.getenv("COMFYUI_IMAGE", "yanwk/comfyui-boot:cu124")
-COMFYUI_PORT = int(os.getenv("COMFYUI_PORT", "7650"))
+COMFYUI_IMAGE = os.getenv("COMFYUI_IMAGE", "yanwk/comfyui-boot:cu126-slim-20260914")
+COMFYUI_PORT = int(os.getenv("COMFYUI_PORT", "7643"))
 COMFYUI_CONTAINER = os.getenv("COMFYUI_CONTAINER_NAME", "flux_comfyui")
 COMFYUI_NETWORK = os.getenv("COMFYUI_NETWORK", "flux-net")
 
@@ -23,10 +24,28 @@ DEFAULT_CONFIG = {
     "force_fp16": False,
     "disable_xformers": False,
     "preview_method": "auto",
-    "port": 7650,
+    "port": 7643,
 }
 
 app = FastAPI()
+
+# --- Image Pull State ---
+_pull_status: dict = {"pulling": False, "done": False, "error": None, "progress": ""}
+_pull_lock = threading.Lock()
+
+
+def _pull_image_bg() -> None:
+    global _pull_status
+    try:
+        for line in docker_client.api.pull(COMFYUI_IMAGE, stream=True, decode=True):
+            with _pull_lock:
+                _pull_status["progress"] = line.get("progress") or line.get("status", "")
+        with _pull_lock:
+            _pull_status = {"pulling": False, "done": True, "error": None, "progress": ""}
+    except Exception as exc:
+        with _pull_lock:
+            _pull_status = {"pulling": False, "done": False, "error": str(exc), "progress": ""}
+
 
 # --- Docker Client ---
 try:
@@ -186,12 +205,44 @@ def container_status():
     }
 
 
+@app.post("/api/image/pull")
+def pull_image():
+    if not DOCKER_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Docker not available")
+    with _pull_lock:
+        if _pull_status["pulling"]:
+            return {"status": "already_pulling"}
+        _pull_status.update({"pulling": True, "done": False, "error": None, "progress": ""})
+    threading.Thread(target=_pull_image_bg, daemon=True).start()
+    return {"status": "started"}
+
+
+@app.get("/api/image/status")
+def image_status():
+    try:
+        docker_client.images.get(COMFYUI_IMAGE)
+        present = True
+    except (docker.errors.ImageNotFound, Exception):
+        present = False
+    with _pull_lock:
+        snap = dict(_pull_status)
+    return {"present": present, **snap}
+
+
 @app.post("/api/container/start")
 def start_container(req: StartRequest):
     if not DOCKER_AVAILABLE:
         raise HTTPException(status_code=503, detail="Docker not available")
     if not WEIGHTS_HOST_PATH:
         raise HTTPException(status_code=503, detail="Host-Pfad für /weights nicht aufgelöst")
+
+    try:
+        docker_client.images.get(COMFYUI_IMAGE)
+    except docker.errors.ImageNotFound:
+        raise HTTPException(
+            status_code=409,
+            detail="Image nicht lokal vorhanden. Bitte zuerst 'Image laden' klicken.",
+        )
 
     if not (WEIGHTS_DIR / req.checkpoint_filename).exists():
         raise HTTPException(status_code=404, detail=f"Checkpoint nicht gefunden: {req.checkpoint_filename}")

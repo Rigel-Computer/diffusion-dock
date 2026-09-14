@@ -1,18 +1,22 @@
 let selectedCheckpoint = null;
 let pollTimer = null;
+let imagePollTimer = null;
 let isContainerRunning = false;
-let currentPort = 7650;
+let imagePresent = false;
+let currentPort = 7643;
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
     loadCheckpoints();
     pollStatus();
     startPolling(5000);
+    pollImageStatus();
 
     document.getElementById('startBtn').addEventListener('click', startContainer);
     document.getElementById('stopBtn').addEventListener('click', stopContainer);
     document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
     document.getElementById('installGgufBtn').addEventListener('click', installGgufExtension);
+    document.getElementById('pullImageBtn').addEventListener('click', loadImage);
 });
 
 // --- Checkpoints ---
@@ -60,7 +64,7 @@ async function selectCheckpoint(filename, element) {
     document.getElementById('infoSection').style.display = '';
     document.getElementById('ggufSection').style.display = '';
     document.getElementById('configModelName').textContent = filename;
-    document.getElementById('startBtn').disabled = isContainerRunning;
+    document.getElementById('startBtn').disabled = isContainerRunning || !imagePresent;
     document.getElementById('saveConfigBtn').disabled = false;
 
     try {
@@ -226,8 +230,75 @@ function updateStatus(data) {
         }
     }
 
-    document.getElementById('startBtn').disabled = !selectedCheckpoint || isContainerRunning;
+    document.getElementById('startBtn').disabled = !selectedCheckpoint || isContainerRunning || !imagePresent;
     document.getElementById('stopBtn').disabled = !isContainerRunning;
+}
+
+// --- Image Pull ---
+async function pollImageStatus() {
+    try {
+        const r = await fetch('/api/image/status');
+        const data = await r.json();
+        updateImageUI(data);
+        if (data.pulling) {
+            if (!imagePollTimer) imagePollTimer = setInterval(pollImageStatus, 2000);
+        } else {
+            if (imagePollTimer) { clearInterval(imagePollTimer); imagePollTimer = null; }
+        }
+    } catch (e) {}
+}
+
+function updateImageUI(data) {
+    const statusText = document.getElementById('imageStatusText');
+    const pullBtn    = document.getElementById('pullImageBtn');
+    const progressWrap = document.getElementById('pullProgressWrap');
+    const bar        = document.getElementById('pullProgressBar');
+    const progText   = document.getElementById('pullProgressText');
+
+    imagePresent = data.present;
+
+    if (data.pulling) {
+        statusText.textContent = 'Lade Image…';
+        statusText.style.color = 'var(--warning)';
+        pullBtn.style.display = 'none';
+        progressWrap.style.display = '';
+        bar.className = 'progress-bar-fill indeterminate';
+        progText.textContent = data.progress || '';
+    } else if (data.present) {
+        statusText.textContent = '✓ Image vorhanden';
+        statusText.style.color = 'var(--success)';
+        pullBtn.style.display = 'none';
+        progressWrap.style.display = 'none';
+        bar.className = 'progress-bar-fill';
+        bar.style.width = '100%';
+    } else if (data.error) {
+        statusText.textContent = 'Fehler: ' + data.error;
+        statusText.style.color = 'var(--danger)';
+        pullBtn.style.display = '';
+        pullBtn.textContent = 'Erneut versuchen';
+        progressWrap.style.display = 'none';
+    } else {
+        statusText.textContent = '✗ Image nicht lokal vorhanden';
+        statusText.style.color = 'var(--danger)';
+        pullBtn.style.display = '';
+        pullBtn.textContent = 'Image laden';
+        progressWrap.style.display = 'none';
+    }
+
+    document.getElementById('startBtn').disabled = !selectedCheckpoint || isContainerRunning || !imagePresent;
+}
+
+async function loadImage() {
+    const pullBtn = document.getElementById('pullImageBtn');
+    pullBtn.disabled = true;
+    try {
+        await fetch('/api/image/pull', { method: 'POST' });
+        if (!imagePollTimer) imagePollTimer = setInterval(pollImageStatus, 2000);
+        pollImageStatus();
+    } catch (e) {
+        showToast('Verbindungsfehler', 'error');
+    }
+    pullBtn.disabled = false;
 }
 
 // --- Config Save ---

@@ -44,10 +44,10 @@ Browser (Port 7651)
 docker compose -f docker-compose-flux.yml up -d --build
 
 # Management UI
-http://localhost:7651
+http://localhost:7644
 
 # ComfyUI (once started via the UI)
-http://localhost:7650
+http://localhost:7643
 ```
 
 ## First GGUF Workflow
@@ -62,8 +62,8 @@ http://localhost:7650
 
 | Port | Service |
 |------|---------|
-| 7651 | Flux Manager UI |
-| 7650 | ComfyUI (active while container is running) |
+| 7644 | Flux Manager UI |
+| 7643 | ComfyUI (active while container is running) |
 
 ## Per-Model Configuration
 

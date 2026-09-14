@@ -359,3 +359,39 @@ header h1 {
 .toast.hidden { opacity: 0; pointer-events: none; }
 .toast.error { background: var(--danger); }
 .toast.success { background: var(--success); }
+
+/* Image Section */
+.image-status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.progress-bar-track {
+    height: 8px;
+    background: var(--surface-alt);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.progress-bar-fill.indeterminate {
+    width: 40%;
+    animation: slide 1.2s infinite linear;
+}
+
+@keyframes slide {
+    0%   { margin-left: -40%; }
+    100% { margin-left: 100%; }
+}

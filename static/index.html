@@ -108,6 +108,21 @@
             </button>
          </section>
 
+         <!-- Image -->
+         <section class="section" id="imageSection">
+            <h2>ComfyUI Image</h2>
+            <div class="image-status-row">
+               <span id="imageStatusText" class="muted">Prüfe...</span>
+               <button id="pullImageBtn" class="btn btn-config" style="display:none">Image laden</button>
+            </div>
+            <div id="pullProgressWrap" style="display:none; margin-top:8px">
+               <div class="progress-bar-track">
+                  <div id="pullProgressBar" class="progress-bar-fill"></div>
+               </div>
+               <span id="pullProgressText" class="muted" style="font-size:0.78rem"></span>
+            </div>
+         </section>
+
          <!-- Actions -->
          <section class="actions">
             <button id="startBtn" class="btn btn-start" disabled>Start</button>
