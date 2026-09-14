@@ -96,10 +96,11 @@ def is_gguf(filename: str) -> bool:
 
 
 def get_model_mount_path(filename: str) -> str:
-    # GGUF diffusion models go to models/unet/ (ComfyUI-GGUF extension expects this)
+    # Mount the specific file, not the directory — keeps models/unet/ writable
+    # so yanwk's startup script can place its placeholder files there.
     if is_gguf(filename):
-        return "/root/ComfyUI/models/unet"
-    return "/root/ComfyUI/models/checkpoints"
+        return f"/root/ComfyUI/models/unet/{filename}"
+    return f"/root/ComfyUI/models/checkpoints/{filename}"
 
 
 def get_config_path(filename: str) -> Path:
@@ -278,8 +279,15 @@ def start_container(req: StartRequest):
     if req.preview_method != "auto":
         flags.extend(["--preview-method", req.preview_method])
 
+    EXTENSIONS_DIR.mkdir(mode=0o777, parents=True, exist_ok=True)
+    try:
+        EXTENSIONS_DIR.chmod(0o777)
+    except Exception:
+        pass
+
+    checkpoint_host_path = f"{WEIGHTS_HOST_PATH}/{req.checkpoint_filename}"
     volumes = {
-        WEIGHTS_HOST_PATH: {
+        checkpoint_host_path: {
             "bind": get_model_mount_path(req.checkpoint_filename),
             "mode": "ro",
         }
@@ -306,9 +314,9 @@ def start_container(req: StartRequest):
                 "port": str(req.port),
             },
             shm_size="12g",
+            dns=["8.8.8.8", "1.1.1.1"],
             network=COMFYUI_NETWORK,
             security_opt=["no-new-privileges:true"],
-            cap_drop=["ALL"],  # GPU läuft über DeviceRequest, braucht keine Linux-Capabilities
 
         )
         return {
@@ -358,7 +366,7 @@ def install_gguf_extension():
     target = "/root/ComfyUI/custom_nodes/ComfyUI-GGUF"
 
     result = container.exec_run(
-        ["git", "clone", "https://github.com/comfyanonymous/ComfyUI-GGUF", target],
+        ["git", "clone", "https://github.com/city96/ComfyUI-GGUF", target],
         user="root",
     )
     if result.exit_code != 0 and b"already exists" not in result.output:

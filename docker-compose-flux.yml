@@ -16,7 +16,7 @@ services:
          - IMAGES=1       # GET /images/* (Metadaten lesen)
          - POST=1         # POST-Requests: create, start, stop
          - DELETE=1       # DELETE-Requests: Container entfernen
-         - EXEC=1         # Für einmalige GGUF-Extension-Installation; danach auf 0 setzen
+         - EXEC=0         # GGUF-Extension wird per Host-Clone vorinstalliert, kein exec nötig
       restart: unless-stopped
 
    flux-manager:
