@@ -1,7 +1,5 @@
 # Flux / ComfyUI Manager
 
-> **Work in progress** — not yet tested end-to-end. Use at your own risk.
-
 A lightweight web UI for managing local diffusion model inference via ComfyUI.
 Spin up a ComfyUI container on demand, configure it per model, and open the
 ComfyUI interface with a single click — without keeping a GPU-hungry process
@@ -10,18 +8,19 @@ running in the background when you don't need it.
 ## Architecture
 
 ```
-Browser (Port 7651)
-    └─> flux-manager [FastAPI] (Port 8000→7651)
+Browser (Port 7644)
+    └─> flux-manager [FastAPI] (Port 8000→7644)
             │  Static files (static/)
             │  Per-model configs (configs/)
+            │  Extensions (extensions/ → custom_nodes/)
             │
             └─> Docker Socket Proxy (flux_socket_proxy)
                     │
                     └─> ComfyUI Container [flux_comfyui] (on demand)
-                            yanwk/comfyui-boot:cu124
+                            yanwk/comfyui-boot:cu126-slim-20260914
                             GPU passthrough
-                            Port 7650, ComfyUI Web UI
-                            /weights (read-only, GGUF + Safetensors)
+                            Port 7643, ComfyUI Web UI
+                            /weights (read-only, single model file)
 ```
 
 ## Requirements
@@ -34,29 +33,29 @@ Browser (Port 7651)
 
 | Format | Mount path in container | Notes |
 |--------|------------------------|-------|
-| `.gguf` | `models/unet/` | Requires ComfyUI-GGUF extension |
-| `.safetensors` | `models/checkpoints/` | Natively supported |
+| `.gguf` | `models/unet/<filename>` | Requires ComfyUI-GGUF extension (see below) |
+| `.safetensors` | `models/checkpoints/<filename>` | Natively supported |
 
 ## Quickstart
 
 ```bash
-# Build and start the manager
+# 1. Pre-install GGUF extension (one-time, on the host)
+mkdir -p extensions/ComfyUI-GGUF
+git clone https://github.com/city96/ComfyUI-GGUF extensions/ComfyUI-GGUF
+
+# 2. Build and start the manager
 docker compose -f docker-compose-flux.yml up -d --build
 
-# Management UI
+# 3. Open the management UI
 http://localhost:7644
-
-# ComfyUI (once started via the UI)
-http://localhost:7643
 ```
 
-## First GGUF Workflow
+## First Run
 
-1. Open the management UI → select a GGUF model → Start
-2. Wait for the status indicator to turn green (`ComfyUI ready`)
-3. Click "Install GGUF Extension" (one-time, persists in `extensions/`)
-4. Restart the container (Stop → Start)
-5. Click "Open ComfyUI ↗" → build your workflow in the native ComfyUI UI
+1. Click **"Image laden"** — downloads the ComfyUI image with a progress bar (one-time, ~13 GB)
+2. Select a checkpoint → **Start**
+3. Wait for the status indicator to turn green (`ComfyUI ready`)
+4. Click **"Open ComfyUI ↗"** → build your workflow in the native ComfyUI UI
 
 ## Ports
 
@@ -80,9 +79,9 @@ Configs are saved as JSON files in `configs/`:
 ## Security
 
 - Manager container runs as non-root (uid 1000) with a read-only filesystem
-- Weights volume is always mounted read-only
+- Weights volume is always mounted read-only (single file, not directory)
 - Docker access is sandboxed via socket proxy (only container/image operations allowed)
-- `EXEC=1` on the socket proxy can be set to `0` after the GGUF extension is installed
+- `EXEC=0` on the socket proxy — GGUF extension is pre-installed via host clone, no exec needed
 
 ---
 
