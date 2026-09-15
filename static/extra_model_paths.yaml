@@ -1,0 +1,9 @@
+# ComfyUI extra model paths — zeigt auf /extra_models (= Host-weights-Verzeichnis)
+# Unterordner-Struktur: Encoder/VAE in Unterordnern, Diffusions-Checkpoints im Root.
+extra_models:
+    base_path: /extra_models
+    clip: clip/
+    vae: vae/
+    text_encoders: clip/
+    loras: loras/
+    upscale_models: upscale_models/
