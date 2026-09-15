@@ -25,6 +25,7 @@ Browser (Port 7644)
                             Port 7643, ComfyUI-Web-UI
                             /weights (read-only, Diffusions-Checkpoint)
                             /extra_models (read-only, Encoder + VAE)
+                            /output → flux-manager/outputs/ (read-write)
 ```
 
 ## Hardware-Voraussetzungen
@@ -103,6 +104,12 @@ Configs werden als JSON in `configs/` gespeichert:
 | `force_fp16` | ~20% VRAM sparen |
 | `disable_xformers` | Fallback auf PyTorch Attention |
 | `preview_method` | `auto` / `latent2rgb` / `none` |
+
+## Generierte Bilder
+
+ComfyUI speichert generierte Bilder in `flux-manager/outputs/` auf dem Host.
+Das Verzeichnis wird beim ersten Container-Start automatisch angelegt.
+Kein `docker cp` oder Container-Zugriff nötig — Dateien erscheinen direkt im Ordner.
 
 ## Sicherheit
 

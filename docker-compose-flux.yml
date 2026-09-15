@@ -40,6 +40,7 @@ services:
          - ./backend.py:/app/backend.py:ro
          - ./configs:/app/configs
          - ./extensions:/app/extensions
+         - ./outputs:/app/outputs
          - ../weights:/weights:ro
       environment:
          - DOCKER_HOST=tcp://flux-socket-proxy:2375

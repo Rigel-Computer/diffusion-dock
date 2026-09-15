@@ -13,6 +13,7 @@ from pydantic import BaseModel
 WEIGHTS_DIR = Path(os.getenv("WEIGHTS_DIR", "/weights"))
 CONFIGS_DIR = Path(os.getenv("CONFIGS_DIR", "/app/configs"))
 EXTENSIONS_DIR = Path(os.getenv("EXTENSIONS_DIR", "/app/extensions"))
+OUTPUTS_DIR = Path(os.getenv("OUTPUTS_DIR", "/app/outputs"))
 
 EXTRA_MODEL_PATHS_YAML = """\
 # ComfyUI extra model paths — zeigt auf /extra_models (= Host-weights-Verzeichnis)
@@ -74,6 +75,7 @@ except Exception:
 WEIGHTS_HOST_PATH = None
 EXTENSIONS_HOST_PATH = None
 CONFIGS_HOST_PATH = None
+OUTPUTS_HOST_PATH = None
 if DOCKER_AVAILABLE:
     try:
         hostname = socket.gethostname()
@@ -85,6 +87,8 @@ if DOCKER_AVAILABLE:
                 EXTENSIONS_HOST_PATH = mount["Source"]
             elif mount["Destination"] == "/app/configs":
                 CONFIGS_HOST_PATH = mount["Source"]
+            elif mount["Destination"] == "/app/outputs":
+                OUTPUTS_HOST_PATH = mount["Source"]
     except Exception:
         pass
 
@@ -330,6 +334,12 @@ def start_container(req: StartRequest):
         volumes[f"{CONFIGS_HOST_PATH}/extra_model_paths.yaml"] = {
             "bind": "/root/ComfyUI/extra_model_paths.yaml",
             "mode": "ro",
+        }
+    if OUTPUTS_HOST_PATH:
+        OUTPUTS_DIR.mkdir(mode=0o755, parents=True, exist_ok=True)
+        volumes[OUTPUTS_HOST_PATH] = {
+            "bind": "/root/ComfyUI/output",
+            "mode": "rw",
         }
 
     try:

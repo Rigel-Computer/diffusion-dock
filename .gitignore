@@ -17,6 +17,8 @@ weights/
 # Persistente Laufzeit-Daten
 configs/
 extensions/
+outputs/*
+!outputs/.gitkeep
 
 # Docker
 .dockerenv
