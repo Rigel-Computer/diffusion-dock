@@ -1,3 +1,7 @@
+> **⚠ Work in progress** — functional but not feature-complete.
+> Core workflow (start/stop ComfyUI, load GGUF models) works.
+> Text encoders and VAE require manual file placement (see [Weights Directory](#weights-directory)).
+
 # Flux / ComfyUI Manager
 
 A lightweight web UI for managing local diffusion model inference via ComfyUI.
@@ -20,7 +24,8 @@ Browser (Port 7644)
                             yanwk/comfyui-boot:cu126-slim-20260914
                             GPU passthrough
                             Port 7643, ComfyUI Web UI
-                            /weights (read-only, single model file)
+                            /weights (read-only, diffusion checkpoint)
+                            /extra_models (read-only, encoders + VAE)
 ```
 
 ## Requirements
@@ -35,6 +40,30 @@ Browser (Port 7644)
 |--------|------------------------|-------|
 | `.gguf` | `models/unet/<filename>` | Requires ComfyUI-GGUF extension (see below) |
 | `.safetensors` | `models/checkpoints/<filename>` | Natively supported |
+
+## Weights Directory
+
+The weights directory lives next to this repository (`../weights/`).
+Diffusion checkpoints go in the root; supporting models in subdirectories:
+
+```
+weights/
+├── my-model-Q6_K.gguf       ← selectable in the manager UI
+├── clip/
+│   ├── clip_l.safetensors   ← CLIP text encoder (shared across models)
+│   └── t5xxl_fp16.safetensors  ← T5-XXL text encoder (runs on CPU/RAM)
+├── vae/
+│   └── ae.safetensors       ← VAE decoder
+├── loras/
+└── upscale_models/
+```
+
+Files in subdirectories are invisible to the checkpoint dropdown but are
+automatically discovered by ComfyUI via `extra_model_paths.yaml`.
+
+For Flux.1-dev, download the three supporting files from
+[black-forest-labs/FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev)
+on Hugging Face.
 
 ## Quickstart
 
@@ -79,7 +108,7 @@ Configs are saved as JSON files in `configs/`:
 ## Security
 
 - Manager container runs as non-root (uid 1000) with a read-only filesystem
-- Weights volume is always mounted read-only (single file, not directory)
+- Weights are always mounted read-only (single checkpoint file + encoder directory)
 - Docker access is sandboxed via socket proxy (only container/image operations allowed)
 - `EXEC=0` on the socket proxy — GGUF extension is pre-installed via host clone, no exec needed
 

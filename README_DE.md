@@ -1,3 +1,7 @@
+> **⚠ Work in Progress** — funktionsfähig, aber nicht vollständig.
+> Grundbetrieb (ComfyUI starten/stoppen, GGUF-Modelle laden) funktioniert.
+> Text-Encoder und VAE müssen manuell bereitgestellt werden (siehe [Weights-Verzeichnis](#weights-verzeichnis)).
+
 # Flux / ComfyUI Manager
 
 Lokales Management-UI für ComfyUI auf einer RTX 4070 Ti Super.
@@ -19,7 +23,8 @@ Browser (Port 7644)
                             yanwk/comfyui-boot:cu126-slim-20260914
                             GPU passthrough
                             Port 7643, ComfyUI-Web-UI
-                            /weights (read-only, einzelne Modelldatei)
+                            /weights (read-only, Diffusions-Checkpoint)
+                            /extra_models (read-only, Encoder + VAE)
 ```
 
 ## Hardware-Voraussetzungen
@@ -34,6 +39,30 @@ Browser (Port 7644)
 |--------|------------------------|---------|
 | `.gguf` | `models/unet/<dateiname>` | Erfordert ComfyUI-GGUF Extension (siehe unten) |
 | `.safetensors` | `models/checkpoints/<dateiname>` | Nativ unterstützt |
+
+## Weights-Verzeichnis
+
+Das weights-Verzeichnis liegt neben diesem Repo (`../weights/`).
+Diffusions-Checkpoints kommen direkt ins Root, unterstützende Modelle in Unterordner:
+
+```
+weights/
+├── mein-modell-Q6_K.gguf        ← erscheint im Dropdown des Managers
+├── clip/
+│   ├── clip_l.safetensors       ← CLIP Text-Encoder (modellübergreifend nutzbar)
+│   └── t5xxl_fp16.safetensors   ← T5-XXL Text-Encoder (läuft auf CPU/RAM)
+├── vae/
+│   └── ae.safetensors           ← VAE-Decoder
+├── loras/
+└── upscale_models/
+```
+
+Dateien in Unterordnern erscheinen nicht im Checkpoint-Dropdown, werden aber von
+ComfyUI automatisch über `extra_model_paths.yaml` gefunden.
+
+Für Flux.1-dev die drei unterstützenden Dateien von
+[black-forest-labs/FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev)
+auf Hugging Face herunterladen.
 
 ## Quickstart
 
@@ -78,7 +107,7 @@ Configs werden als JSON in `configs/` gespeichert:
 ## Sicherheit
 
 - Manager-Container läuft als non-root (uid 1000), read-only Filesystem
-- Weights-Volume immer read-only gemountet (einzelne Datei, nicht Verzeichnis)
+- Weights immer read-only gemountet (einzelne Checkpoint-Datei + Encoder-Verzeichnis)
 - Docker-Zugriff über Socket-Proxy (nur Container/Image-Operationen erlaubt)
 - `EXEC=0` am Socket-Proxy — GGUF-Extension per Host-Clone vorinstalliert, kein exec nötig
 
