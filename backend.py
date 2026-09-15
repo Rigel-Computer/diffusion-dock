@@ -13,6 +13,18 @@ from pydantic import BaseModel
 WEIGHTS_DIR = Path(os.getenv("WEIGHTS_DIR", "/weights"))
 CONFIGS_DIR = Path(os.getenv("CONFIGS_DIR", "/app/configs"))
 EXTENSIONS_DIR = Path(os.getenv("EXTENSIONS_DIR", "/app/extensions"))
+
+EXTRA_MODEL_PATHS_YAML = """\
+# ComfyUI extra model paths — zeigt auf /extra_models (= Host-weights-Verzeichnis)
+# Unterordner-Struktur: Encoder/VAE in Unterordnern, Diffusions-Checkpoints im Root.
+extra_models:
+    base_path: /extra_models
+    clip: clip/
+    vae: vae/
+    text_encoders: clip/
+    loras: loras/
+    upscale_models: upscale_models/
+"""
 COMFYUI_IMAGE = os.getenv("COMFYUI_IMAGE", "yanwk/comfyui-boot:cu126-slim-20260914")
 COMFYUI_PORT = int(os.getenv("COMFYUI_PORT", "7643"))
 COMFYUI_CONTAINER = os.getenv("COMFYUI_CONTAINER_NAME", "flux_comfyui")
@@ -61,6 +73,7 @@ except Exception:
 # We inspect our own container's mount table to find both.
 WEIGHTS_HOST_PATH = None
 EXTENSIONS_HOST_PATH = None
+CONFIGS_HOST_PATH = None
 if DOCKER_AVAILABLE:
     try:
         hostname = socket.gethostname()
@@ -70,6 +83,17 @@ if DOCKER_AVAILABLE:
                 WEIGHTS_HOST_PATH = mount["Source"]
             elif mount["Destination"] == "/app/extensions":
                 EXTENSIONS_HOST_PATH = mount["Source"]
+            elif mount["Destination"] == "/app/configs":
+                CONFIGS_HOST_PATH = mount["Source"]
+    except Exception:
+        pass
+
+# Sicherstellen dass extra_model_paths.yaml in configs/ liegt
+_yaml_path = CONFIGS_DIR / "extra_model_paths.yaml"
+if not _yaml_path.exists():
+    try:
+        CONFIGS_DIR.mkdir(parents=True, exist_ok=True)
+        _yaml_path.write_text(EXTRA_MODEL_PATHS_YAML)
     except Exception:
         pass
 
@@ -290,12 +314,22 @@ def start_container(req: StartRequest):
         checkpoint_host_path: {
             "bind": get_model_mount_path(req.checkpoint_filename),
             "mode": "ro",
-        }
+        },
+        # Ganzes weights-Verzeichnis als /extra_models — für T5-XXL, CLIP-L, VAE etc.
+        WEIGHTS_HOST_PATH: {
+            "bind": "/extra_models",
+            "mode": "ro",
+        },
     }
     if EXTENSIONS_HOST_PATH:
         volumes[EXTENSIONS_HOST_PATH] = {
             "bind": "/root/ComfyUI/custom_nodes",
             "mode": "rw",
+        }
+    if CONFIGS_HOST_PATH:
+        volumes[f"{CONFIGS_HOST_PATH}/extra_model_paths.yaml"] = {
+            "bind": "/root/ComfyUI/extra_model_paths.yaml",
+            "mode": "ro",
         }
 
     try:
