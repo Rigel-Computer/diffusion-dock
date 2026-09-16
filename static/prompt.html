@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComfyUI · Prompt Interface</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="comfyui_frontend.css">
+</head>
+<body>
+<div class="outer">
+
+  <header>
+    <div class="logo">comfy<span>/</span>ui · prompt interface</div>
+    <div class="status-label">localhost:8188</div>
+    <div class="status-dot"></div>
+  </header>
+
+  <div class="conn-bar">
+    <div class="field-group">
+      <label>ComfyUI Endpunkt</label>
+      <input type="text" value="http://localhost:8188" placeholder="http://localhost:8188">
+    </div>
+    <div class="field-group">
+      <label>API Key (optional)</label>
+      <input type="password" value="sk-dummy-000000000000" placeholder="sk-…">
+    </div>
+    <label class="translate-toggle">
+      <input type="checkbox" id="translateToggle">
+      <div class="toggle-track"></div>
+      <span class="toggle-label">DE → EN übersetzen</span>
+    </label>
+  </div>
+
+  <div class="section-title">Prompts</div>
+  <div class="prompts">
+    <div class="prompt-block">
+      <span class="prompt-tag tag-t5">T5-XXL · oben</span>
+      <textarea id="promptT5" rows="5" placeholder="Vollständige Bildbeschreibung auf Deutsch oder Englisch — Szene, Materialien, Licht, Stimmung, Details."></textarea>
+      <div class="prompt-hint">Sätze · max ~200 Wörter</div>
+    </div>
+    <div class="prompt-block">
+      <span class="prompt-tag tag-clip">CLIP-L · unten</span>
+      <textarea id="promptClip" rows="5" placeholder="wooden table, oak, rustic, farmhouse, sunlight, photorealistic"></textarea>
+      <div class="prompt-hint">Kernbegriffe, kommagetrennt · max 77 Tokens · immer Englisch</div>
+    </div>
+  </div>
+
+  <div class="params-section">
+    <div class="section-title">KSampler · Parameter</div>
+    <div class="params-grid">
+
+      <div class="param-card">
+        <div class="param-header">
+          <span class="param-name">steps</span>
+          <span class="param-value" id="stepsVal">30</span>
+        </div>
+        <input type="range" min="10" max="60" value="30" step="1"
+          oninput="document.getElementById('stepsVal').textContent=this.value;document.getElementById('stepsText').value=this.value">
+        <input type="text" class="param-text" id="stepsText" value="30"
+          oninput="this.previousElementSibling.value=this.value;document.getElementById('stepsVal').textContent=this.value">
+      </div>
+
+      <div class="param-card">
+        <div class="param-header">
+          <span class="param-name">cfg</span>
+          <span class="param-value" id="cfgVal">1.0</span>
+        </div>
+        <input type="range" min="1" max="15" value="1" step="0.5"
+          oninput="document.getElementById('cfgVal').textContent=parseFloat(this.value).toFixed(1);document.getElementById('cfgText').value=parseFloat(this.value).toFixed(1)">
+        <input type="text" class="param-text" id="cfgText" value="1.0"
+          oninput="this.previousElementSibling.value=this.value;document.getElementById('cfgVal').textContent=this.value">
+      </div>
+
+      <div class="param-card">
+        <div class="param-header">
+          <span class="param-name">denoise</span>
+          <span class="param-value" id="denoiseVal">1.00</span>
+        </div>
+        <input type="range" min="0" max="1" value="1" step="0.05"
+          oninput="document.getElementById('denoiseVal').textContent=parseFloat(this.value).toFixed(2);document.getElementById('denoiseText').value=parseFloat(this.value).toFixed(2)">
+        <input type="text" class="param-text" id="denoiseText" value="1.00"
+          oninput="this.previousElementSibling.value=this.value;document.getElementById('denoiseVal').textContent=this.value">
+      </div>
+
+      <div class="param-card">
+        <div class="param-header"><span class="param-name">sampler</span></div>
+        <select>
+          <option selected>euler</option>
+          <option>euler_ancestral</option>
+          <option>dpm_2</option>
+          <option>dpm_2_ancestral</option>
+          <option>heun</option>
+          <option>dpm_fast</option>
+          <option>dpm_adaptive</option>
+          <option>lms</option>
+          <option>ddim</option>
+          <option>uni_pc</option>
+        </select>
+      </div>
+
+      <div class="param-card">
+        <div class="param-header"><span class="param-name">scheduler</span></div>
+        <select>
+          <option selected>simple</option>
+          <option>normal</option>
+          <option>karras</option>
+          <option>exponential</option>
+          <option>sgm_uniform</option>
+          <option>beta</option>
+        </select>
+      </div>
+
+      <div class="param-card">
+        <div class="param-header"><span class="param-name">seed</span></div>
+        <div class="seed-row">
+          <input type="text" id="seedInput" value="128196925080727" placeholder="Seed-Nummer">
+          <button class="btn-dice" title="Zufälligen Seed generieren"
+            onclick="document.getElementById('seedInput').value=Math.floor(Math.random()*9999999999999)">⚄</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="generate-row">
+    <button class="btn-generate">Generieren →</button>
+  </div>
+
+  <div class="legend">
+    <div class="section-title">Parameter · Legende</div>
+    <div class="legend-grid">
+      <div class="legend-card">
+        <div class="legend-term">steps</div>
+        <div class="legend-def">Anzahl der Diffusionsschritte. Mehr Schritte = mehr Detail, aber längere Rechenzeit. Für Flux: <strong>25–40</strong> ist ein guter Bereich. Über 50 bringt selten sichtbaren Gewinn.</div>
+      </div>
+      <div class="legend-card">
+        <div class="legend-term">cfg (Classifier-Free Guidance)</div>
+        <div class="legend-def">Wie streng das Modell dem Prompt folgt. Bei <strong>Flux immer 1.0</strong> lassen — Flux ignoriert höhere Werte und produziert bei CFG > 2 oft Artefakte.</div>
+      </div>
+      <div class="legend-card">
+        <div class="legend-term">denoise</div>
+        <div class="legend-def">Stärke der Entrauschung. <strong>1.0 = txt2img</strong> (Bild von Null). Werte unter 1.0 für img2img. Für deinen Workflow: immer 1.0.</div>
+      </div>
+      <div class="legend-card">
+        <div class="legend-term">sampler</div>
+        <div class="legend-def">Algorithmus, der den Rauschpfad berechnet. <strong>euler</strong> ist für Flux empfohlen — schnell und stabil.</div>
+      </div>
+      <div class="legend-card">
+        <div class="legend-term">scheduler</div>
+        <div class="legend-def">Bestimmt, wie die Rauschstärke über die Steps abnimmt. <strong>simple</strong> ist Flux-optimiert.</div>
+      </div>
+      <div class="legend-card">
+        <div class="legend-term">seed</div>
+        <div class="legend-def">Startwert für den Zufallsgenerator. Gleicher Seed + gleiche Parameter = identisches Bild. <strong>⚄</strong> würfelt einen neuen Seed.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>comfyui · prompt interface · v0.1 · entwurf</span>
+    <span>flux.1-dev · abliterated-V2 · Q6_K</span>
+  </footer>
+
+</div>
+</body>
+</html>
