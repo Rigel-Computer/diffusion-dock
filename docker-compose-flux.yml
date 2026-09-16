@@ -19,6 +19,16 @@ services:
          - EXEC=0         # GGUF-Extension wird per Host-Clone vorinstalliert, kein exec nötig
       restart: unless-stopped
 
+   flux-translator:
+      build: ./translator
+      container_name: flux_translator
+      networks:
+         - flux-net
+      read_only: true
+      tmpfs:
+         - /tmp
+      restart: unless-stopped
+
    flux-manager:
       build: .
       image: flux_manager_image
@@ -52,6 +62,8 @@ services:
          - COMFYUI_PORT=7643
          - COMFYUI_CONTAINER_NAME=flux_comfyui
          - COMFYUI_NETWORK=flux-net
+         - TRANSLATOR_URL=http://flux-translator:5000
       depends_on:
          - flux-socket-proxy
+         - flux-translator
       restart: unless-stopped

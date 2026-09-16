@@ -20,6 +20,7 @@ COMFYUI_IMAGE = os.getenv("COMFYUI_IMAGE", "yanwk/comfyui-boot:cu126-slim-202609
 COMFYUI_PORT = int(os.getenv("COMFYUI_PORT", "7643"))
 COMFYUI_CONTAINER = os.getenv("COMFYUI_CONTAINER_NAME", "flux_comfyui")
 COMFYUI_NETWORK = os.getenv("COMFYUI_NETWORK", "flux-net")
+TRANSLATOR_URL = os.getenv("TRANSLATOR_URL", "http://flux-translator:5000")
 
 DEFAULT_CONFIG = {
     "vram_mode": "normalvram",
@@ -97,6 +98,10 @@ class StartRequest(BaseModel):
 class ConfigSaveRequest(BaseModel):
     checkpoint_filename: str
     config: dict
+
+
+class TranslationRequest(BaseModel):
+    text: str
 
 
 # --- Helpers ---
@@ -405,6 +410,23 @@ def install_gguf_extension():
         raise HTTPException(status_code=500, detail=result.output.decode(errors="replace"))
 
     return {"success": True, "message": "ComfyUI-GGUF installiert. Container neu starten zum Aktivieren."}
+
+
+# --- Translation Proxy ---
+@app.post("/api/translate")
+def api_translate(req: TranslationRequest):
+    try:
+        res = requests.post(
+            f"{TRANSLATOR_URL}/translate",
+            json={"text": req.text},
+            timeout=30,
+        )
+        res.raise_for_status()
+        return res.json()
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Translator-Container nicht erreichbar")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
 
 
 # --- Workflows ---
