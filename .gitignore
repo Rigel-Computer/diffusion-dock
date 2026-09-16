@@ -13,6 +13,11 @@ weights/
 *.bin
 *.pt
 *.pth
+*.spm
+
+# Translator-Modell (wird ins Docker-Image gebacken, nicht ins Repo)
+translator/model/
+translator/model-src/
 
 # Persistente Laufzeit-Daten
 configs/
