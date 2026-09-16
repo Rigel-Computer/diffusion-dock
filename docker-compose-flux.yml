@@ -37,6 +37,7 @@ services:
          - ALL
       volumes:
          - ./static:/app/static:ro
+         - ./workflows:/app/workflows:ro
          - ./backend.py:/app/backend.py:ro
          - ./configs:/app/configs
          - ./extensions:/app/extensions

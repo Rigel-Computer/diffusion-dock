@@ -5,25 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ComfyUI · Prompt Interface</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="comfyui_frontend.css">
+<link rel="stylesheet" href="prompt.css">
 </head>
 <body>
 <div class="outer">
 
   <header>
     <div class="logo">comfy<span>/</span>ui · prompt interface</div>
-    <div class="status-label">localhost:8188</div>
+    <div class="status-label">localhost:7643</div>
     <div class="status-dot"></div>
   </header>
 
   <div class="conn-bar">
     <div class="field-group">
       <label>ComfyUI Endpunkt</label>
-      <input type="text" value="http://localhost:8188" placeholder="http://localhost:8188">
+      <input type="text" value="http://localhost:7643" placeholder="http://localhost:7643">
     </div>
     <div class="field-group">
       <label>API Key (optional)</label>
       <input type="password" value="sk-dummy-000000000000" placeholder="sk-…">
+    </div>
+    <div class="field-group">
+      <label>Workflow</label>
+      <select id="workflowSel"><option value="">– wird geladen –</option></select>
     </div>
     <label class="translate-toggle">
       <input type="checkbox" id="translateToggle">
@@ -85,7 +89,7 @@
 
       <div class="param-card">
         <div class="param-header"><span class="param-name">sampler</span></div>
-        <select>
+        <select id="samplerSel">
           <option selected>euler</option>
           <option>euler_ancestral</option>
           <option>dpm_2</option>
@@ -101,7 +105,7 @@
 
       <div class="param-card">
         <div class="param-header"><span class="param-name">scheduler</span></div>
-        <select>
+        <select id="schedulerSel">
           <option selected>simple</option>
           <option>normal</option>
           <option>karras</option>
@@ -163,5 +167,6 @@
   </footer>
 
 </div>
+<script src="prompt.js"></script>
 </body>
 </html>

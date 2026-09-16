@@ -14,6 +14,7 @@ WEIGHTS_DIR = Path(os.getenv("WEIGHTS_DIR", "/weights"))
 CONFIGS_DIR = Path(os.getenv("CONFIGS_DIR", "/app/configs"))
 EXTENSIONS_DIR = Path(os.getenv("EXTENSIONS_DIR", "/app/extensions"))
 OUTPUTS_DIR = Path(os.getenv("OUTPUTS_DIR", "/app/outputs"))
+WORKFLOWS_DIR = Path(os.getenv("WORKFLOWS_DIR", "/app/workflows"))
 
 COMFYUI_IMAGE = os.getenv("COMFYUI_IMAGE", "yanwk/comfyui-boot:cu126-slim-20260914")
 COMFYUI_PORT = int(os.getenv("COMFYUI_PORT", "7643"))
@@ -404,6 +405,28 @@ def install_gguf_extension():
         raise HTTPException(status_code=500, detail=result.output.decode(errors="replace"))
 
     return {"success": True, "message": "ComfyUI-GGUF installiert. Container neu starten zum Aktivieren."}
+
+
+# --- Workflows ---
+@app.get("/api/workflows/list")
+def list_workflows():
+    if not WORKFLOWS_DIR.exists():
+        return {"workflows": []}
+    workflows = sorted(
+        f.name for f in WORKFLOWS_DIR.iterdir()
+        if f.is_file() and f.suffix == ".json"
+    )
+    return {"workflows": workflows}
+
+
+@app.get("/api/workflows/{name}")
+def get_workflow(name: str):
+    if "/" in name or "\\" in name or ".." in name or not name.endswith(".json"):
+        raise HTTPException(status_code=400, detail="Invalid workflow name")
+    path = WORKFLOWS_DIR / name
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 # --- Static Files (muss zuletzt stehen) ---

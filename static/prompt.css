@@ -66,7 +66,7 @@ header {
 /* CONNECTION BAR */
 .conn-bar {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr 1fr auto;
   gap: 10px;
   margin-bottom: 2rem;
   align-items: end;
@@ -351,6 +351,38 @@ select:focus { border-color: var(--accent); }
 }
 .legend-def strong { color: var(--text); font-weight: 400; }
 
+/* RESULT / STATUS */
+.gen-status {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.gen-status[data-type="success"] { border-color: var(--green); color: var(--green); }
+.gen-status[data-type="error"]   { border-color: #f87171; color: #f87171; }
+
+.gen-result {
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.gen-img {
+  max-width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.gen-filename {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* FOOTER */
 footer {
   margin-top: 3rem;
@@ -362,4 +394,3 @@ footer {
   display: flex;
   justify-content: space-between;
 }
-</style>
