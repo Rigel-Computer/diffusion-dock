@@ -19,6 +19,7 @@ const denoiseText     = $('denoiseText');
 const seedInput       = $('seedInput');
 const samplerSel      = $('samplerSel');
 const schedulerSel    = $('schedulerSel');
+const btnStop               = $('btnStop');
 const btnTranslate          = $('btnTranslate');
 const translateResult       = $('translateResult');
 const promptT5Translated    = $('promptT5Translated');
@@ -40,6 +41,7 @@ generateRow.after(statusEl);
 // --- WebSocket Progress ---
 let _ws = null;
 let _currentPromptId = null;
+let _abort = false;
 
 function openProgressWS() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -69,6 +71,7 @@ function syncTranslateBtn() {
   const v = translateToggle.checked ? '' : 'none';
   btnTranslate.style.display     = v;
   btnTranslateClip.style.display = v;
+  btnGenerate.textContent = translateToggle.checked ? 'Übersetzen & Generieren →' : 'Generieren →';
 }
 translateToggle.addEventListener('change', syncTranslateBtn);
 syncTranslateBtn();
@@ -191,6 +194,7 @@ async function submitPrompt(payload) {
 async function pollHistory(promptId) {
   for (let i = 0; i < POLL_MAX; i++) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
+    if (_abort) throw new Error('Abgebrochen.');
     try {
       const res = await fetch(`/api/comfy/history/${promptId}`, { headers: comfyHeaders() });
       if (!res.ok) continue;
@@ -205,8 +209,47 @@ async function pollHistory(promptId) {
   throw new Error(`Timeout: kein Ergebnis nach ${Math.round(POLL_MAX * POLL_INTERVAL / 60000)} Minuten`);
 }
 
+// --- Stop handler ---
+btnStop.addEventListener('click', async () => {
+  _abort = true;
+  btnStop.disabled = true;
+  setStatus('Wird abgebrochen…');
+  try {
+    await fetch('/api/comfy/interrupt', { method: 'POST', headers: comfyHeaders() });
+  } catch { /* best effort */ }
+});
+
 // --- Main handler ---
 btnGenerate.addEventListener('click', async () => {
+  const needsT5   = translateToggle.checked && promptT5.value.trim()   && !promptT5Translated.value.trim();
+  const needsClip = translateToggle.checked && promptClip.value.trim() && !promptClipTranslated.value.trim();
+
+  // Schritt 1: nur übersetzen, dann warten
+  if (needsT5 || needsClip) {
+    btnGenerate.disabled = true;
+    btnGenerate.textContent = 'Übersetze…';
+    setStatus('Übersetze DE → EN…');
+    try {
+      if (needsT5) {
+        promptT5Translated.value = await translate(promptT5.value.trim());
+        translateResult.hidden = false;
+      }
+      if (needsClip) {
+        promptClipTranslated.value = await translate(promptClip.value.trim());
+        translateResultClip.hidden = false;
+      }
+      btnGenerate.textContent = 'Übersetztes generieren →';
+      btnGenerate.disabled = false;
+      setStatus('Übersetzung fertig — prüfen, dann generieren.', 'success');
+    } catch (err) {
+      setStatus(err.message, 'error');
+      btnGenerate.disabled = false;
+      syncTranslateBtn();
+    }
+    return;
+  }
+
+  // Schritt 2: generieren
   const base = endpointInput.value.trim().replace(/\/$/, '');
 
   btnGenerate.disabled = true;
@@ -216,23 +259,11 @@ btnGenerate.addEventListener('click', async () => {
   progressFill.style.width = '0%';
   progressLabel.textContent = `0 / ${parseInt(stepsText.value) || 20}`;
   genProgress.hidden = false;
+  btnStop.hidden = false;
+  _abort = false;
   openProgressWS();
 
   try {
-    // Auto-translate if toggle is on and translated box still empty
-    if (translateToggle.checked) {
-      if (promptT5.value.trim() && !promptT5Translated.value.trim()) {
-        setStatus('Übersetze T5 DE → EN…');
-        promptT5Translated.value = await translate(promptT5.value.trim());
-        translateResult.hidden = false;
-      }
-      if (promptClip.value.trim() && !promptClipTranslated.value.trim()) {
-        setStatus('Übersetze CLIP DE → EN…');
-        promptClipTranslated.value = await translate(promptClip.value.trim());
-        translateResultClip.hidden = false;
-      }
-    }
-
     const t5Text   = promptT5Translated.value.trim()   || promptT5.value.trim();
     const clipText = promptClipTranslated.value.trim() || promptClip.value.trim();
 
@@ -271,9 +302,12 @@ btnGenerate.addEventListener('click', async () => {
   } finally {
     closeProgressWS();
     _currentPromptId = null;
+    _abort = false;
     genProgress.hidden = true;
+    btnStop.hidden = true;
+    btnStop.disabled = false;
     btnGenerate.disabled = false;
-    btnGenerate.textContent = 'Generieren →';
+    syncTranslateBtn(); // setzt korrektes Label je nach Toggle-Zustand
   }
 });
 

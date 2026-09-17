@@ -478,6 +478,21 @@ async def comfy_view(request: Request):
         raise HTTPException(status_code=503, detail="ComfyUI nicht erreichbar")
 
 
+# --- ComfyUI Interrupt Proxy ---
+@app.post("/api/comfy/interrupt")
+async def comfy_interrupt(request: Request):
+    headers = {}
+    if auth := request.headers.get("Authorization"):
+        headers["Authorization"] = auth
+    try:
+        res = requests.post(f"{COMFYUI_INTERNAL_URL}/interrupt",
+                            headers=headers, timeout=10)
+        return Response(content=res.content, status_code=res.status_code,
+                        media_type=res.headers.get("content-type", "application/json"))
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="ComfyUI nicht erreichbar")
+
+
 # --- Translation Proxy ---
 @app.post("/api/translate")
 def api_translate(req: TranslationRequest):

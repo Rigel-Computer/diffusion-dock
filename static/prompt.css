@@ -331,12 +331,27 @@ select:focus { border-color: var(--accent); }
 }
 .btn-dice:hover { color: var(--accent); border-color: var(--accent); }
 
-/* GENERATE BUTTON */
+/* GENERATE / STOP BUTTONS */
 .generate-row {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 3rem;
 }
+.btn-stop {
+  background: transparent;
+  border: 1px solid #f87171;
+  border-radius: var(--radius);
+  color: #f87171;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 10px 20px;
+  transition: background .15s;
+}
+.btn-stop:hover { background: rgba(248,113,113,.12); }
+.btn-stop:disabled { opacity: .4; cursor: default; }
 .btn-generate {
   background: var(--accent);
   border: none;
