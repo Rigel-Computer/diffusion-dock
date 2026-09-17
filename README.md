@@ -53,6 +53,14 @@ knowledge required.
 
 Open at: `http://localhost:7644/prompt.html`
 
+**Gallery & parameter recall:**
+- Every generated image automatically gets a JSON sidecar in `outputs/json-files/`
+  containing the full prompt and all sampler parameters
+- Gallery (toggleable below the result) shows all images from `outputs/`; click any
+  thumbnail to open the lightbox, click **"Parameter laden"** to restore all settings
+- Delete button removes PNG + JSON in one step — no confirmation, images are
+  reproducible from their JSON
+
 ## Requirements
 
 - CUDA-capable GPU (developed on RTX 4070 Ti Super, 16 GB VRAM)
@@ -109,7 +117,11 @@ http://localhost:7644
 1. Click **"Image laden"** — downloads the ComfyUI image with a progress bar (one-time, ~13 GB)
 2. Select a checkpoint → **Start**
 3. Wait for the status indicator to turn green (`ComfyUI ready`)
-4. Click **"Open ComfyUI ↗"** → build your workflow in the native ComfyUI UI
+4. Open **`http://localhost:7644/prompt.html`** — the Prompt Interface is the primary UI
+5. Select a workflow, enter your prompt, click **"Generieren →"**
+
+> **Note:** "Open ComfyUI ↗" is still available for advanced workflow editing,
+> but day-to-day generation runs entirely through the Prompt Interface.
 
 ## Ports
 
