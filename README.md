@@ -1,6 +1,4 @@
-> **⚠ Work in progress** — functional but not feature-complete.
-> Core workflow (start/stop ComfyUI, load GGUF models) works.
-> Text encoders and VAE require manual file placement (see [Weights Directory](#weights-directory)).
+> **Status:** Core workflow fully functional. Prompt Interface operational end-to-end.
 
 # Flux / ComfyUI Manager
 
@@ -17,17 +15,43 @@ Browser (Port 7644)
             │  Static files (static/)
             │  Per-model configs (configs/)
             │  Extensions (extensions/ → custom_nodes/)
+            │  Workflows (workflows/*.json)
+            │
+            ├─> flux-translator [MarianMT] (internal, no host port)
+            │       Helsinki-NLP/opus-mt-de-en, baked into image
+            │       POST /translate — offline, no external API
             │
             └─> Docker Socket Proxy (flux_socket_proxy)
                     │
                     └─> ComfyUI Container [flux_comfyui] (on demand)
                             yanwk/comfyui-boot:cu126-slim-20260914
                             GPU passthrough
-                            Port 7643, ComfyUI Web UI
+                            Port 7643, ComfyUI Web UI + WebSocket
                             /weights (read-only, diffusion checkpoint)
                             /extra_models (read-only, encoders + VAE)
                             /output → flux-manager/outputs/ (read-write)
 ```
+
+## Prompt Interface (`prompt.html`)
+
+The real differentiator: a browser-native prompt UI that replaces the ComfyUI
+node editor for the standard text-to-image workflow. No node wiring, no ComfyUI
+knowledge required.
+
+**Key features:**
+- **Workflow selector** — picks up any `workflows/*.json` file automatically;
+  model names (UNET, CLIP, VAE) are read from the workflow, no hardcoding
+- **Dual-prompt input** — separate T5-XXL (sentences) and CLIP-L (keywords) fields,
+  matching Flux's actual dual-encoder architecture
+- **Offline DE→EN translation** — local MarianMT model, zero latency, no API key,
+  no data leaving the machine. Two-step flow: translate → review/edit → confirm generate
+- **Real-time progress bar** — live step counter via ComfyUI WebSocket
+  (`executing` events: "model loading…" → "generating…" → progress fill)
+- **Stop button** — aborts a running generation cleanly via `/interrupt`
+- **All KSampler parameters** — steps, CFG, denoise, sampler, scheduler, seed
+  (with dice button for random seeds)
+
+Open at: `http://localhost:7644/prompt.html`
 
 ## Requirements
 
@@ -91,7 +115,7 @@ http://localhost:7644
 
 | Port | Service |
 |------|---------|
-| 7644 | Flux Manager UI |
+| 7644 | Flux Manager UI + Prompt Interface |
 | 7643 | ComfyUI (active while container is running) |
 
 ## Per-Model Configuration

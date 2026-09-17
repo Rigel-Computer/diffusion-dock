@@ -1,6 +1,4 @@
-> **⚠ Work in Progress** — funktionsfähig, aber nicht vollständig.
-> Grundbetrieb (ComfyUI starten/stoppen, GGUF-Modelle laden) funktioniert.
-> Text-Encoder und VAE müssen manuell bereitgestellt werden (siehe [Weights-Verzeichnis](#weights-verzeichnis)).
+> **Status:** Grundbetrieb vollständig funktionsfähig. Prompt Interface end-to-end im Betrieb.
 
 # Flux / ComfyUI Manager
 
@@ -16,17 +14,43 @@ Browser (Port 7644)
             │  Statische Files (static/)
             │  Per-Modell-Configs (configs/)
             │  Extensions (extensions/ → custom_nodes/)
+            │  Workflows (workflows/*.json)
+            │
+            ├─> flux-translator [MarianMT] (intern, kein Host-Port)
+            │       Helsinki-NLP/opus-mt-de-en, ins Image gebacken
+            │       POST /translate — offline, keine externe API
             │
             └─> Docker Socket Proxy (flux_socket_proxy)
                     │
                     └─> ComfyUI Container [flux_comfyui] (on demand)
                             yanwk/comfyui-boot:cu126-slim-20260914
                             GPU passthrough
-                            Port 7643, ComfyUI-Web-UI
+                            Port 7643, ComfyUI-Web-UI + WebSocket
                             /weights (read-only, Diffusions-Checkpoint)
                             /extra_models (read-only, Encoder + VAE)
                             /output → flux-manager/outputs/ (read-write)
 ```
+
+## Prompt Interface (`prompt.html`)
+
+Das eigentliche Highlight: ein browser-natives Prompt-UI, das den ComfyUI-Node-Editor
+für den Standard-Text-to-Image-Workflow ersetzt. Kein Node-Verdrahten, keine
+ComfyUI-Kenntnisse erforderlich.
+
+**Kernfunktionen:**
+- **Workflow-Selector** — liest `workflows/*.json` automatisch ein;
+  Modellnamen (UNET, CLIP, VAE) werden aus dem Workflow gelesen, nichts hardcodiert
+- **Dual-Prompt-Eingabe** — getrennte Felder für T5-XXL (Sätze) und CLIP-L (Keywords),
+  entspricht Flux' tatsächlicher Dual-Encoder-Architektur
+- **Offline DE→EN Übersetzung** — lokales MarianMT-Modell, keine Latenz, kein API-Key,
+  keine Daten verlassen das Gerät. Zweistufig: übersetzen → prüfen/bearbeiten → bestätigen
+- **Echtzeit-Fortschrittsbalken** — Live-Schrittzähler via ComfyUI WebSocket
+  (`executing`-Events: „Modell lädt…" → „Generiere…" → Fortschrittsbalken)
+- **Stop-Button** — bricht laufende Generierung sauber über `/interrupt` ab
+- **Alle KSampler-Parameter** — Steps, CFG, Denoise, Sampler, Scheduler, Seed
+  (mit Würfel-Button für Zufalls-Seeds)
+
+Aufruf: `http://localhost:7644/prompt.html`
 
 ## Hardware-Voraussetzungen
 
@@ -90,7 +114,7 @@ http://localhost:7644
 
 | Port | Dienst |
 |------|--------|
-| 7644 | Flux Manager UI |
+| 7644 | Flux Manager UI + Prompt Interface |
 | 7643 | ComfyUI (aktiv wenn Container läuft) |
 
 ## Konfiguration pro Modell
