@@ -45,11 +45,24 @@
         <button id="btnTranslate" class="btn-translate">DE → EN</button>
         <div class="prompt-hint">Sätze · max ~200 Wörter</div>
       </div>
+      <div id="translateResult" class="translate-result" hidden>
+        <span class="prompt-tag tag-t5-en">T5-XXL · EN übersetzt</span>
+        <textarea id="promptT5Translated" rows="5" placeholder="Englische Übersetzung — editierbar"></textarea>
+        <div class="prompt-hint">Wird beim Generieren verwendet · editierbar</div>
+      </div>
     </div>
     <div class="prompt-block">
       <span class="prompt-tag tag-clip">CLIP-L · unten</span>
-      <textarea id="promptClip" rows="5" placeholder="wooden table, oak, rustic, farmhouse, sunlight, photorealistic"></textarea>
-      <div class="prompt-hint">Kernbegriffe, kommagetrennt · max 77 Tokens · immer Englisch</div>
+      <textarea id="promptClip" rows="5" placeholder="hölzerner Tisch, Eiche, rustikal, Bauernhaus, Sonnenlicht, fotorealistisch"></textarea>
+      <div class="translate-row">
+        <button id="btnTranslateClip" class="btn-translate">DE → EN</button>
+        <div class="prompt-hint">Kernbegriffe, kommagetrennt · max 77 Tokens</div>
+      </div>
+      <div id="translateResultClip" class="translate-result" hidden>
+        <span class="prompt-tag tag-clip-en">CLIP-L · EN übersetzt</span>
+        <textarea id="promptClipTranslated" rows="5" placeholder="Englische Schlüsselbegriffe — editierbar"></textarea>
+        <div class="prompt-hint">Wird beim Generieren verwendet · editierbar</div>
+      </div>
     </div>
   </div>
 

@@ -19,7 +19,12 @@ const denoiseText     = $('denoiseText');
 const seedInput       = $('seedInput');
 const samplerSel      = $('samplerSel');
 const schedulerSel    = $('schedulerSel');
-const btnTranslate    = $('btnTranslate');
+const btnTranslate          = $('btnTranslate');
+const translateResult       = $('translateResult');
+const promptT5Translated    = $('promptT5Translated');
+const btnTranslateClip      = $('btnTranslateClip');
+const translateResultClip   = $('translateResultClip');
+const promptClipTranslated  = $('promptClipTranslated');
 const btnGenerate     = document.querySelector('.btn-generate');
 const genProgress     = $('genProgress');
 const progressFill    = $('progressFill');
@@ -61,28 +66,33 @@ function closeProgressWS() {
 
 // Translate button: visible only when toggle is on
 function syncTranslateBtn() {
-  btnTranslate.style.display = translateToggle.checked ? '' : 'none';
+  const v = translateToggle.checked ? '' : 'none';
+  btnTranslate.style.display     = v;
+  btnTranslateClip.style.display = v;
 }
 translateToggle.addEventListener('change', syncTranslateBtn);
 syncTranslateBtn();
 
-// Translate button: writes result back into T5 textarea for review
-btnTranslate.addEventListener('click', async () => {
-  const text = promptT5.value.trim();
+async function runTranslate(srcEl, dstEl, resultEl, btn) {
+  const text = srcEl.value.trim();
   if (!text) return;
-  btnTranslate.disabled = true;
-  btnTranslate.textContent = '…';
+  btn.disabled = true;
+  btn.textContent = '…';
   setStatus('Übersetze DE → EN…');
   try {
-    promptT5.value = await translate(text);
+    dstEl.value = await translate(text);
+    resultEl.hidden = false;
     setStatus('Übersetzt — bitte prüfen, dann Generieren klicken.', 'success');
   } catch (err) {
     setStatus(err.message, 'error');
   } finally {
-    btnTranslate.disabled = false;
-    btnTranslate.textContent = 'DE → EN';
+    btn.disabled = false;
+    btn.textContent = 'DE → EN';
   }
-});
+}
+
+btnTranslate.addEventListener('click',     () => runTranslate(promptT5,   promptT5Translated,   translateResult,     btnTranslate));
+btnTranslateClip.addEventListener('click', () => runTranslate(promptClip, promptClipTranslated, translateResultClip, btnTranslateClip));
 
 function setStatus(msg, type = 'info') {
   statusEl.textContent = msg;
@@ -197,9 +207,7 @@ async function pollHistory(promptId) {
 
 // --- Main handler ---
 btnGenerate.addEventListener('click', async () => {
-  const base     = endpointInput.value.trim().replace(/\/$/, '');
-  let   t5Text   = promptT5.value.trim();
-  const clipText = promptClip.value.trim();
+  const base = endpointInput.value.trim().replace(/\/$/, '');
 
   btnGenerate.disabled = true;
   btnGenerate.textContent = 'Lädt…';
@@ -211,6 +219,23 @@ btnGenerate.addEventListener('click', async () => {
   openProgressWS();
 
   try {
+    // Auto-translate if toggle is on and translated box still empty
+    if (translateToggle.checked) {
+      if (promptT5.value.trim() && !promptT5Translated.value.trim()) {
+        setStatus('Übersetze T5 DE → EN…');
+        promptT5Translated.value = await translate(promptT5.value.trim());
+        translateResult.hidden = false;
+      }
+      if (promptClip.value.trim() && !promptClipTranslated.value.trim()) {
+        setStatus('Übersetze CLIP DE → EN…');
+        promptClipTranslated.value = await translate(promptClip.value.trim());
+        translateResultClip.hidden = false;
+      }
+    }
+
+    const t5Text   = promptT5Translated.value.trim()   || promptT5.value.trim();
+    const clipText = promptClipTranslated.value.trim() || promptClip.value.trim();
+
     // Load workflow and extract model names
     const wfName = workflowSel.value;
     if (!wfName) throw new Error('Kein Workflow ausgewählt');

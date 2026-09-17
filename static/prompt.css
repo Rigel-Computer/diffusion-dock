@@ -161,8 +161,10 @@ input[type="text"]:focus, input[type="password"]:focus {
   margin-bottom: 2px;
   width: fit-content;
 }
-.tag-t5  { background: #3d2e00; color: var(--amber); }
-.tag-clip { background: #1a2540; color: #7eb3f7; }
+.tag-t5      { background: #3d2e00; color: var(--amber); }
+.tag-t5-en   { background: #1a3020; color: var(--green); }
+.tag-clip    { background: #1a2540; color: #7eb3f7; }
+.tag-clip-en { background: #1a3020; color: var(--green); }
 
 textarea {
   background: var(--surface);
@@ -186,6 +188,12 @@ textarea:focus { border-color: var(--accent); }
   align-items: center;
   gap: 8px;
   margin-top: 4px;
+}
+.translate-result {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
 }
 .prompt-hint {
   font-family: var(--mono);
