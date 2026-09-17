@@ -371,6 +371,35 @@ select:focus { border-color: var(--accent); }
 }
 .legend-def strong { color: var(--text); font-weight: 400; }
 
+/* PROGRESS BAR */
+.gen-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+.progress-track {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .25s ease;
+}
+.progress-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 52px;
+  text-align: right;
+}
+
 /* RESULT / STATUS */
 .gen-status {
   font-family: var(--mono);

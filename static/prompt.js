@@ -3,7 +3,7 @@
 
 const CLIENT_ID     = 'prompt-ui-' + Math.random().toString(36).slice(2, 10);
 const POLL_INTERVAL = 2000;
-const POLL_MAX      = 90; // 3 min
+const POLL_MAX      = 300; // 10 min
 
 const $ = id => document.getElementById(id);
 
@@ -21,6 +21,9 @@ const samplerSel      = $('samplerSel');
 const schedulerSel    = $('schedulerSel');
 const btnTranslate    = $('btnTranslate');
 const btnGenerate     = document.querySelector('.btn-generate');
+const genProgress     = $('genProgress');
+const progressFill    = $('progressFill');
+const progressLabel   = $('progressLabel');
 
 // Result UI injected after the generate row
 const statusEl  = Object.assign(document.createElement('div'), { className: 'gen-status', hidden: true });
@@ -28,6 +31,33 @@ const resultEl  = Object.assign(document.createElement('div'), { className: 'gen
 const generateRow = document.querySelector('.generate-row');
 generateRow.after(resultEl);
 generateRow.after(statusEl);
+
+// --- WebSocket Progress ---
+let _ws = null;
+let _currentPromptId = null;
+
+function openProgressWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  _ws = new WebSocket(`${proto}//${location.host}/api/comfy/ws?clientId=${CLIENT_ID}`);
+  _ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'executing' && msg.data.prompt_id === _currentPromptId && msg.data.node) {
+        setStatus(`Generiere… (${_currentPromptId.slice(0, 8)})`);
+      }
+      if (msg.type === 'progress') {
+        const { value, max } = msg.data;
+        const pct = max > 0 ? (value / max * 100).toFixed(1) : 0;
+        progressFill.style.width = `${pct}%`;
+        progressLabel.textContent = `${value} / ${max}`;
+      }
+    } catch { /* binary oder kein JSON */ }
+  };
+}
+
+function closeProgressWS() {
+  if (_ws) { _ws.close(); _ws = null; }
+}
 
 // Translate button: visible only when toggle is on
 function syncTranslateBtn() {
@@ -175,6 +205,10 @@ btnGenerate.addEventListener('click', async () => {
   btnGenerate.textContent = 'Lädt…';
   resultEl.innerHTML = '';
   setStatus('');
+  progressFill.style.width = '0%';
+  progressLabel.textContent = `0 / ${parseInt(stepsText.value) || 20}`;
+  genProgress.hidden = false;
+  openProgressWS();
 
   try {
     // Load workflow and extract model names
@@ -198,8 +232,9 @@ btnGenerate.addEventListener('click', async () => {
 
     setStatus('Sende Workflow…');
     const promptId = await submitPrompt(buildPayload(t5Text, clipText, params, models));
+    _currentPromptId = promptId;
 
-    setStatus(`Generiere… (${promptId.slice(0, 8)})`);
+    setStatus('Modell wird geladen…');
     const image = await pollHistory(promptId);
 
     showImage(image.filename, image.subfolder);
@@ -209,6 +244,9 @@ btnGenerate.addEventListener('click', async () => {
     setStatus(err.message, 'error');
     console.error(err);
   } finally {
+    closeProgressWS();
+    _currentPromptId = null;
+    genProgress.hidden = true;
     btnGenerate.disabled = false;
     btnGenerate.textContent = 'Generieren →';
   }

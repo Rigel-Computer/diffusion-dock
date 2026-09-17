@@ -5,7 +5,8 @@ import threading
 import docker
 import requests
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, WebSocket
+import websockets as ws_client
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -411,6 +412,26 @@ def install_gguf_extension():
         raise HTTPException(status_code=500, detail=result.output.decode(errors="replace"))
 
     return {"success": True, "message": "ComfyUI-GGUF installiert. Container neu starten zum Aktivieren."}
+
+
+# --- ComfyUI WebSocket Proxy (Fortschrittsanzeige) ---
+@app.websocket("/api/comfy/ws")
+async def comfy_ws_proxy(websocket: WebSocket, clientId: str = ""):
+    await websocket.accept()
+    uri = f"ws://{COMFYUI_CONTAINER}:{COMFYUI_PORT}/ws?clientId={clientId}"
+    try:
+        async with ws_client.connect(uri) as comfy_ws:
+            async for message in comfy_ws:
+                if isinstance(message, str):
+                    await websocket.send_text(message)
+                # binary frames sind Vorschaubilder — für Fortschritt nicht nötig
+    except Exception:
+        pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
 
 # --- ComfyUI Proxy (vermeidet CORS: Browser → Manager → ComfyUI) ---
