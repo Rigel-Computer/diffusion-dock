@@ -181,12 +181,32 @@ textarea {
   min-height: 100px;
 }
 textarea:focus { border-color: var(--accent); }
+.translate-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
 .prompt-hint {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--text-muted);
-  margin-top: 2px;
 }
+.btn-translate {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--accent-dim);
+  border-radius: 4px;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 3px 10px;
+  white-space: nowrap;
+  transition: border-color .15s;
+  flex-shrink: 0;
+}
+.btn-translate:hover { border-color: var(--accent); }
+.btn-translate:disabled { opacity: .4; cursor: default; }
 
 /* PARAMS GRID */
 .params-section { margin-bottom: 2rem; }

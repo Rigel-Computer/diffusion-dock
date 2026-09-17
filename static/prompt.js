@@ -19,6 +19,7 @@ const denoiseText     = $('denoiseText');
 const seedInput       = $('seedInput');
 const samplerSel      = $('samplerSel');
 const schedulerSel    = $('schedulerSel');
+const btnTranslate    = $('btnTranslate');
 const btnGenerate     = document.querySelector('.btn-generate');
 
 // Result UI injected after the generate row
@@ -27,6 +28,31 @@ const resultEl  = Object.assign(document.createElement('div'), { className: 'gen
 const generateRow = document.querySelector('.generate-row');
 generateRow.after(resultEl);
 generateRow.after(statusEl);
+
+// Translate button: visible only when toggle is on
+function syncTranslateBtn() {
+  btnTranslate.style.display = translateToggle.checked ? '' : 'none';
+}
+translateToggle.addEventListener('change', syncTranslateBtn);
+syncTranslateBtn();
+
+// Translate button: writes result back into T5 textarea for review
+btnTranslate.addEventListener('click', async () => {
+  const text = promptT5.value.trim();
+  if (!text) return;
+  btnTranslate.disabled = true;
+  btnTranslate.textContent = '…';
+  setStatus('Übersetze DE → EN…');
+  try {
+    promptT5.value = await translate(text);
+    setStatus('Übersetzt — bitte prüfen, dann Generieren klicken.', 'success');
+  } catch (err) {
+    setStatus(err.message, 'error');
+  } finally {
+    btnTranslate.disabled = false;
+    btnTranslate.textContent = 'DE → EN';
+  }
+});
 
 function setStatus(msg, type = 'info') {
   statusEl.textContent = msg;
@@ -160,12 +186,6 @@ btnGenerate.addEventListener('click', async () => {
     const workflow = await wfRes.json();
     const models   = extractModels(workflow);
     if (!models.unet) throw new Error('Workflow hat keinen UnetLoaderGGUF-Node');
-
-    // Optional translation
-    if (translateToggle.checked && t5Text) {
-      setStatus('Übersetze DE → EN…');
-      t5Text = await translate(t5Text);
-    }
 
     const params = {
       seed:      parseInt(seedInput.value)     || Math.floor(Math.random() * 9999999999999),
