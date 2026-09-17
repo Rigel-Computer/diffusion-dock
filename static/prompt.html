@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ComfyUI · Prompt Interface</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/x-icon" href="promptinterface.ico">
 <link rel="stylesheet" href="prompt.css">
 </head>
 <body>
@@ -155,6 +156,19 @@
     <span class="progress-label" id="progressLabel">0 / –</span>
   </div>
 
+  <div class="output-controls">
+    <button id="btnTogglePreview" class="btn-toggle-output">Vorschaubild ausblenden</button>
+    <button id="btnToggleGallery" class="btn-toggle-output">Galerie einblenden</button>
+  </div>
+
+  <div id="gallerySection" hidden>
+    <div class="section-title">Outputs · Galerie</div>
+    <div id="galleryGrid" class="gallery-grid"></div>
+    <div class="output-controls">
+      <button id="btnToggleGalleryBottom" class="btn-toggle-output">Galerie ausblenden</button>
+    </div>
+  </div>
+
   <div class="legend">
     <div class="section-title">Parameter · Legende</div>
     <div class="legend-grid">
@@ -191,6 +205,7 @@
   </footer>
 
 </div>
+<script src="lightbox.js"></script>
 <script src="prompt.js"></script>
 </body>
 </html>

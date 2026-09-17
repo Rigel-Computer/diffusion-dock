@@ -20,6 +20,11 @@ const seedInput       = $('seedInput');
 const samplerSel      = $('samplerSel');
 const schedulerSel    = $('schedulerSel');
 const btnStop               = $('btnStop');
+const btnTogglePreview      = $('btnTogglePreview');
+const btnToggleGallery      = $('btnToggleGallery');
+const gallerySection           = $('gallerySection');
+const galleryGrid              = $('galleryGrid');
+const btnToggleGalleryBottom   = $('btnToggleGalleryBottom');
 const btnTranslate          = $('btnTranslate');
 const translateResult       = $('translateResult');
 const promptT5Translated    = $('promptT5Translated');
@@ -111,6 +116,8 @@ function showImage(filename, subfolder) {
   const label = Object.assign(document.createElement('div'),
     { textContent: filename, className: 'gen-filename' });
   resultEl.append(img, label);
+  resultEl.hidden = false;
+  btnTogglePreview.textContent = 'Vorschaubild ausblenden';
 }
 
 function comfyHeaders() {
@@ -295,6 +302,11 @@ btnGenerate.addEventListener('click', async () => {
 
     showImage(image.filename, image.subfolder);
     setStatus('Fertig.', 'success');
+    saveOutputJson(image.filename, {
+      t5: t5Text, clip: clipText, workflow: wfName,
+      ...params, timestamp: new Date().toISOString()
+    });
+    if (!gallerySection.hidden) loadGallery();
 
   } catch (err) {
     setStatus(err.message, 'error');
@@ -310,6 +322,98 @@ btnGenerate.addEventListener('click', async () => {
     syncTranslateBtn(); // setzt korrektes Label je nach Toggle-Zustand
   }
 });
+
+// --- Output helpers ---
+function saveOutputJson(filename, params) {
+  fetch('/api/outputs/save-json', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename, params })
+  }).catch(() => {});
+}
+
+async function loadGallery() {
+  try {
+    const res = await fetch('/api/outputs/list');
+    const { images } = await res.json();
+    galleryGrid.innerHTML = '';
+    if (!images.length) {
+      galleryGrid.innerHTML = '<div class="prompt-hint" style="padding:1rem">Noch keine Bilder in outputs/</div>';
+      return;
+    }
+    for (const img of images) galleryGrid.append(makeGalleryCard(img.filename, img.has_json));
+  } catch { galleryGrid.innerHTML = '<div class="prompt-hint" style="padding:1rem">Fehler beim Laden</div>'; }
+}
+
+function makeGalleryCard(filename, hasJson) {
+  const card  = Object.assign(document.createElement('div'), { className: 'gallery-card' });
+  const thumb = Object.assign(document.createElement('img'), {
+    src: `/api/comfy/view?filename=${encodeURIComponent(filename)}&subfolder=&type=output`,
+    alt: filename, className: 'gallery-thumb'
+  });
+  thumb.addEventListener('click', () =>
+    openLightbox(thumb.src, filename, hasJson, () => loadParams(filename), () => deleteOutput(filename, card))
+  );
+  const nameEl = Object.assign(document.createElement('div'), { className: 'gallery-filename', textContent: filename });
+  const footer = Object.assign(document.createElement('div'), { className: 'gallery-card-footer' });
+  if (hasJson) {
+    const btnLoad = Object.assign(document.createElement('button'), { className: 'btn-gallery-load', textContent: 'Parameter laden' });
+    btnLoad.addEventListener('click', () => loadParams(filename));
+    footer.append(btnLoad);
+  }
+  const btnDel = Object.assign(document.createElement('button'), { className: 'btn-gallery-delete', textContent: '🗑' });
+  btnDel.addEventListener('click', () => deleteOutput(filename, card));
+  footer.append(btnDel);
+  card.append(thumb, nameEl, footer);
+  return card;
+}
+
+async function loadParams(filename) {
+  try {
+    const res = await fetch(`/api/outputs/json/${encodeURIComponent(filename)}`);
+    if (!res.ok) throw new Error('JSON nicht gefunden');
+    const p = await res.json();
+    if (p.t5)    promptT5.value   = p.t5;
+    if (p.clip)  promptClip.value = p.clip;
+    if (p.seed   != null) seedInput.value = p.seed;
+    if (p.steps  != null) { stepsText.value = p.steps;   stepsText.previousElementSibling.value   = p.steps;   $('stepsVal').textContent  = p.steps; }
+    if (p.cfg    != null) { const v = parseFloat(p.cfg).toFixed(1);   cfgText.value = v;    cfgText.previousElementSibling.value    = p.cfg;   $('cfgVal').textContent    = v; }
+    if (p.denoise!= null) { const v = parseFloat(p.denoise).toFixed(2); denoiseText.value = v; denoiseText.previousElementSibling.value = p.denoise; $('denoiseVal').textContent = v; }
+    if (p.sampler)   samplerSel.value   = p.sampler;
+    if (p.scheduler) schedulerSel.value = p.scheduler;
+    if (p.workflow)  workflowSel.value  = p.workflow;
+    promptT5Translated.value = ''; promptClipTranslated.value = '';
+    translateResult.hidden = true; translateResultClip.hidden = true;
+    setStatus(`Parameter geladen: ${filename}`, 'success');
+  } catch (err) { setStatus(err.message, 'error'); }
+}
+
+async function deleteOutput(filename, cardEl) {
+  try {
+    const res = await fetch(`/api/outputs/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Löschen fehlgeschlagen');
+    cardEl?.remove();
+    setStatus(`${filename} gelöscht.`);
+  } catch (err) { setStatus(err.message, 'error'); }
+}
+
+// Preview toggle
+btnTogglePreview.addEventListener('click', () => {
+  resultEl.hidden = !resultEl.hidden;
+  btnTogglePreview.textContent = resultEl.hidden ? 'Vorschaubild einblenden' : 'Vorschaubild ausblenden';
+});
+
+// Gallery toggle (lazy load)
+let _galleryLoaded = false;
+async function toggleGallery() {
+  gallerySection.hidden = !gallerySection.hidden;
+  btnToggleGallery.textContent = gallerySection.hidden ? 'Galerie einblenden' : 'Galerie ausblenden';
+  if (!gallerySection.hidden && !_galleryLoaded) {
+    await loadGallery();
+    _galleryLoaded = true;
+  }
+}
+btnToggleGallery.addEventListener('click', toggleGallery);
+document.addEventListener('click', e => { if (e.target === btnToggleGalleryBottom) toggleGallery(); });
 
 // Load workflow list on page load
 loadWorkflows();

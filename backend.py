@@ -106,6 +106,11 @@ class TranslationRequest(BaseModel):
     text: str
 
 
+class SaveJsonRequest(BaseModel):
+    filename: str
+    params: dict
+
+
 # --- Helpers ---
 def is_gguf(filename: str) -> bool:
     return filename.lower().endswith(".gguf")
@@ -508,6 +513,60 @@ def api_translate(req: TranslationRequest):
         raise HTTPException(status_code=503, detail="Translator-Container nicht erreichbar")
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc))
+
+
+# --- Outputs ---
+@app.post("/api/outputs/save-json")
+def save_output_json(req: SaveJsonRequest):
+    if "/" in req.filename or "\\" in req.filename or ".." in req.filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    json_dir = OUTPUTS_DIR / "json-files"
+    json_dir.mkdir(parents=True, exist_ok=True)
+    stem = Path(req.filename).stem
+    with open(json_dir / f"{stem}.json", "w", encoding="utf-8") as f:
+        json.dump(req.params, f, indent=2, ensure_ascii=False)
+    return {"saved": f"{stem}.json"}
+
+
+@app.get("/api/outputs/list")
+def list_outputs():
+    if not OUTPUTS_DIR.exists():
+        return {"images": []}
+    json_dir = OUTPUTS_DIR / "json-files"
+    images = []
+    for f in sorted(OUTPUTS_DIR.iterdir(), reverse=True):
+        if f.is_file() and f.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp"):
+            has_json = (json_dir / f"{f.stem}.json").exists() if json_dir.exists() else False
+            images.append({"filename": f.name, "has_json": has_json})
+    return {"images": images}
+
+
+@app.get("/api/outputs/json/{filename}")
+def get_output_json(filename: str):
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    json_path = OUTPUTS_DIR / "json-files" / f"{Path(filename).stem}.json"
+    if not json_path.exists():
+        raise HTTPException(status_code=404, detail="JSON not found")
+    return json.loads(json_path.read_text(encoding="utf-8"))
+
+
+@app.delete("/api/outputs/{filename}")
+def delete_output(filename: str):
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    png_path  = OUTPUTS_DIR / filename
+    json_path = OUTPUTS_DIR / "json-files" / f"{Path(filename).stem}.json"
+    deleted = []
+    if png_path.exists():
+        png_path.unlink()
+        deleted.append(filename)
+    if json_path.exists():
+        json_path.unlink()
+        deleted.append(json_path.name)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="File not found")
+    return {"deleted": deleted}
 
 
 # --- Workflows ---
