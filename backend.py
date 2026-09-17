@@ -5,7 +5,7 @@ import threading
 import docker
 import requests
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -21,6 +21,7 @@ COMFYUI_PORT = int(os.getenv("COMFYUI_PORT", "7643"))
 COMFYUI_CONTAINER = os.getenv("COMFYUI_CONTAINER_NAME", "flux_comfyui")
 COMFYUI_NETWORK = os.getenv("COMFYUI_NETWORK", "flux-net")
 TRANSLATOR_URL = os.getenv("TRANSLATOR_URL", "http://flux-translator:5000")
+COMFYUI_INTERNAL_URL = f"http://{os.getenv('COMFYUI_CONTAINER_NAME', 'flux_comfyui')}:{os.getenv('COMFYUI_PORT', '7643')}"
 
 DEFAULT_CONFIG = {
     "vram_mode": "normalvram",
@@ -410,6 +411,50 @@ def install_gguf_extension():
         raise HTTPException(status_code=500, detail=result.output.decode(errors="replace"))
 
     return {"success": True, "message": "ComfyUI-GGUF installiert. Container neu starten zum Aktivieren."}
+
+
+# --- ComfyUI Proxy (vermeidet CORS: Browser → Manager → ComfyUI) ---
+@app.post("/api/comfy/prompt")
+async def comfy_prompt(request: Request):
+    body = await request.body()
+    headers = {}
+    if auth := request.headers.get("Authorization"):
+        headers["Authorization"] = auth
+    try:
+        res = requests.post(f"{COMFYUI_INTERNAL_URL}/prompt", data=body,
+                            headers={**headers, "Content-Type": "application/json"}, timeout=30)
+        return Response(content=res.content, status_code=res.status_code,
+                        media_type=res.headers.get("content-type", "application/json"))
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="ComfyUI nicht erreichbar")
+
+
+@app.get("/api/comfy/history/{prompt_id}")
+async def comfy_history(prompt_id: str, request: Request):
+    headers = {}
+    if auth := request.headers.get("Authorization"):
+        headers["Authorization"] = auth
+    try:
+        res = requests.get(f"{COMFYUI_INTERNAL_URL}/history/{prompt_id}",
+                           headers=headers, timeout=10)
+        return Response(content=res.content, status_code=res.status_code,
+                        media_type=res.headers.get("content-type", "application/json"))
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="ComfyUI nicht erreichbar")
+
+
+@app.get("/api/comfy/view")
+async def comfy_view(request: Request):
+    headers = {}
+    if auth := request.headers.get("Authorization"):
+        headers["Authorization"] = auth
+    try:
+        res = requests.get(f"{COMFYUI_INTERNAL_URL}/view",
+                           params=dict(request.query_params), headers=headers, timeout=60)
+        return Response(content=res.content, status_code=res.status_code,
+                        media_type=res.headers.get("content-type", "image/png"))
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="ComfyUI nicht erreichbar")
 
 
 # --- Translation Proxy ---

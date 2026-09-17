@@ -34,8 +34,8 @@ function setStatus(msg, type = 'info') {
   statusEl.hidden = !msg;
 }
 
-function showImage(base, filename, subfolder) {
-  const url = `${base}/view?filename=${encodeURIComponent(filename)}&subfolder=${encodeURIComponent(subfolder || '')}&type=output`;
+function showImage(filename, subfolder) {
+  const url = `/api/comfy/view?filename=${encodeURIComponent(filename)}&subfolder=${encodeURIComponent(subfolder || '')}&type=output`;
   resultEl.innerHTML = '';
   const img   = Object.assign(document.createElement('img'),
     { src: url, alt: 'Generiertes Bild', className: 'gen-img' });
@@ -111,8 +111,8 @@ function buildPayload(t5Text, clipText, p, m) {
   };
 }
 
-async function submitPrompt(base, payload) {
-  const res = await fetch(`${base}/prompt`, {
+async function submitPrompt(payload) {
+  const res = await fetch('/api/comfy/prompt', {
     method: 'POST', headers: comfyHeaders(), body: JSON.stringify(payload)
   });
   if (!res.ok) {
@@ -122,11 +122,11 @@ async function submitPrompt(base, payload) {
   return (await res.json()).prompt_id;
 }
 
-async function pollHistory(base, promptId) {
+async function pollHistory(promptId) {
   for (let i = 0; i < POLL_MAX; i++) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
     try {
-      const res = await fetch(`${base}/history/${promptId}`, { headers: comfyHeaders() });
+      const res = await fetch(`/api/comfy/history/${promptId}`, { headers: comfyHeaders() });
       if (!res.ok) continue;
       const data  = await res.json();
       const entry = data[promptId];
@@ -177,12 +177,12 @@ btnGenerate.addEventListener('click', async () => {
     };
 
     setStatus('Sende Workflow…');
-    const promptId = await submitPrompt(base, buildPayload(t5Text, clipText, params, models));
+    const promptId = await submitPrompt(buildPayload(t5Text, clipText, params, models));
 
     setStatus(`Generiere… (${promptId.slice(0, 8)})`);
-    const image = await pollHistory(base, promptId);
+    const image = await pollHistory(promptId);
 
-    showImage(base, image.filename, image.subfolder);
+    showImage(image.filename, image.subfolder);
     setStatus('Fertig.', 'success');
 
   } catch (err) {

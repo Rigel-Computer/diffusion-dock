@@ -1,20 +1,19 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from pydantic import BaseModel
-import ctranslate2
-import sentencepiece as spm
+from transformers import MarianMTModel, MarianTokenizer
+import torch
 
-_translator = None
-_src_sp = None
-_tgt_sp = None
+_model = None
+_tokenizer = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _translator, _src_sp, _tgt_sp
-    _translator = ctranslate2.Translator("/app/model", device="cpu", inter_threads=2)
-    _src_sp = spm.SentencePieceProcessor(model_file="/app/model/source.spm")
-    _tgt_sp = spm.SentencePieceProcessor(model_file="/app/model/target.spm")
+    global _model, _tokenizer
+    _tokenizer = MarianTokenizer.from_pretrained("/app/model")
+    _model = MarianMTModel.from_pretrained("/app/model")
+    _model.eval()
     yield
 
 
@@ -27,9 +26,12 @@ class TranslateRequest(BaseModel):
 
 @app.post("/translate")
 def translate(req: TranslateRequest):
-    tokens = _src_sp.encode(req.text, out_type=str)
-    results = _translator.translate_batch([tokens])
-    translated = _tgt_sp.decode(results[0].hypotheses[0])
+    inputs = _tokenizer(
+        [req.text], return_tensors="pt", padding=True, truncation=True, max_length=512
+    )
+    with torch.no_grad():
+        outputs = _model.generate(**inputs, num_beams=4, max_length=512)
+    translated = _tokenizer.decode(outputs[0], skip_special_tokens=True)
     return {"translated": translated}
 
 

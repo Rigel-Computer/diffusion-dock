@@ -21,7 +21,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 300;
   line-height: 1.6;
   min-height: 100vh;
@@ -44,7 +44,7 @@ header {
 }
 .logo {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 16px;
   color: var(--accent);
   letter-spacing: .05em;
 }
@@ -59,7 +59,7 @@ header {
 }
 .status-label {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-dim);
 }
 
@@ -74,7 +74,7 @@ header {
 .field-group { display: flex; flex-direction: column; gap: 5px; }
 label {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-dim);
   letter-spacing: .04em;
 }
@@ -84,7 +84,7 @@ input[type="text"], input[type="password"] {
   border-radius: var(--radius);
   color: var(--text);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 14px;
   padding: 7px 10px;
   width: 100%;
   outline: none;
@@ -129,14 +129,14 @@ input[type="text"]:focus, input[type="password"]:focus {
 .translate-toggle input:checked + .toggle-track::after { transform: translateX(12px); }
 .toggle-label {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-dim);
 }
 
 /* SECTION TITLES */
 .section-title {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
   letter-spacing: .08em;
   margin-bottom: .75rem;
@@ -154,7 +154,7 @@ input[type="text"]:focus, input[type="password"]:focus {
 .prompt-block { display: flex; flex-direction: column; gap: 5px; }
 .prompt-tag {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   padding: 2px 7px;
   border-radius: 3px;
   display: inline-block;
@@ -170,7 +170,7 @@ textarea {
   border-radius: var(--radius);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 300;
   line-height: 1.6;
   padding: 10px 12px;
@@ -183,7 +183,7 @@ textarea {
 textarea:focus { border-color: var(--accent); }
 .prompt-hint {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -210,12 +210,12 @@ textarea:focus { border-color: var(--accent); }
 }
 .param-name {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-dim);
 }
 .param-value {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 16px;
   color: var(--accent);
   font-weight: 500;
   min-width: 40px;
@@ -254,7 +254,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 4px;
   color: var(--text);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 14px;
   padding: 5px 8px;
   width: 100%;
   margin-top: 8px;
@@ -269,7 +269,7 @@ select {
   border-radius: 4px;
   color: var(--text);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 14px;
   padding: 5px 8px;
   width: 100%;
   margin-top: 8px;
@@ -287,7 +287,7 @@ select:focus { border-color: var(--accent); }
 }
 .seed-row input[type="text"] {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 14px;
   flex: 1;
 }
 .btn-dice {
@@ -296,7 +296,7 @@ select:focus { border-color: var(--accent); }
   border-radius: 4px;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   padding: 5px 9px;
   transition: color .15s, border-color .15s;
   flex-shrink: 0;
@@ -316,7 +316,7 @@ select:focus { border-color: var(--accent); }
   color: #fff;
   cursor: pointer;
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
   letter-spacing: .04em;
   padding: 10px 28px;
@@ -340,12 +340,12 @@ select:focus { border-color: var(--accent); }
 }
 .legend-term {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 14px;
   color: var(--accent);
   margin-bottom: 4px;
 }
 .legend-def {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--text-dim);
   line-height: 1.55;
 }
@@ -354,7 +354,7 @@ select:focus { border-color: var(--accent); }
 /* RESULT / STATUS */
 .gen-status {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 14px;
   padding: 8px 12px;
   border-radius: var(--radius);
   margin-bottom: 1rem;
@@ -379,7 +379,7 @@ select:focus { border-color: var(--accent); }
 }
 .gen-filename {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
@@ -389,7 +389,7 @@ footer {
   padding-top: 1rem;
   border-top: 1px solid var(--border);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
   display: flex;
   justify-content: space-between;
